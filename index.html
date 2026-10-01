@@ -238,7 +238,9 @@ async function apiJson(path, method, body){
    открытии (пока идёт запрос к серверу) и на случай, если сервер на секунду недоступен. */
 let subsCache = safeGet(LS_SUBS, []);
 let subsLoadFailed = false;
+let subsLoadError = ""; /* реальный текст ошибки с сервера — показываем его, а не общую фразу, чтобы было видно, что именно не так */
 let meState = null; /* {telegramId, username, firstName, deliveryTarget, isAdmin} — профиль текущего пользователя, см. GET /api/me */
+let meError = "";
 function loadSubs(){ return subsCache; }
 function genId(){ return "s" + Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
 
@@ -250,8 +252,10 @@ async function refreshSubs(){
     subsCache = (data.subscriptions||[]).map(s=>({ id:s.id, name:s.name, url:s.url, params:s.params||defaultParams(), active:!!s.active }));
     safeSet(LS_SUBS, subsCache);
     subsLoadFailed = false;
+    subsLoadError = "";
   }catch(e){
     subsLoadFailed = true; // остаёмся на закэшированной копии
+    subsLoadError = (e && e.message) || "неизвестная ошибка";
   }
   renderSubs();
 }
@@ -261,7 +265,7 @@ function renderSubs(){
   const list = loadSubs();
   const wrap = $("#subsList");
   if(subsLoadFailed && !list.length){
-    wrap.innerHTML = `<div class="emptyState">Не удалось загрузить подписки — сервер недоступен.<br>Проверьте API_BASE в коде приложения.</div>`;
+    wrap.innerHTML = `<div class="emptyState">Не удалось загрузить подписки.<br>Ошибка сервера: ${escHtml(subsLoadError||"неизвестна")}</div>`;
     return;
   }
   if(!list.length){
@@ -429,7 +433,14 @@ function iconDoc(){ return `<svg width="18" height="18" viewBox="0 0 24 24" fill
 function renderProfile(){
   const u = (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) || null;
   if(!u){
-    $("#profileBlock").innerHTML = `<p class="muted small">Откройте приложение через Telegram, чтобы увидеть профиль.</p>`;
+    /* диагностика: показываем, чего именно не хватает, вместо общей фразы —
+       это помогает понять, видит ли Telegram WebApp вообще данные пользователя */
+    const diag = [
+      "tg объект: " + (tg ? "есть" : "НЕТ"),
+      "tg.initData: " + (tg && tg.initData ? ("есть, длина " + tg.initData.length) : "ПУСТО"),
+      "ответ /api/me: " + (meError || (meState ? "ok" : "ещё не запрашивался")),
+    ].join("<br>");
+    $("#profileBlock").innerHTML = `<p class="muted small">Откройте приложение через Telegram, чтобы увидеть профиль.</p><p class="muted small" style="margin-top:10px;opacity:.7;">${diag}</p>`;
     return;
   }
   const name = [u.first_name, u.last_name].filter(Boolean).join(" ") || "Без имени";
@@ -481,18 +492,22 @@ async function loadMe(){
   try{
     const res = await apiJson("/api/me","GET");
     meState = res.user;
+    meError = "";
   }catch(e){
     meState = null;
+    meError = (e && e.message) || "неизвестная ошибка";
   }
   const adminBtn = $("#adminTabBtn");
   if(adminBtn) adminBtn.hidden = !(meState && meState.isAdmin);
+  if(!$("#profileView").hidden) renderProfile();
+  if(!$("#adminView").hidden) renderAdmin();
 }
 
 /* ---------- вкладка «Админ» (видна только администратору) ---------- */
 async function renderAdmin(){
   const wrap = $("#adminList");
   if(!meState || !meState.isAdmin){
-    wrap.innerHTML = `<div class="emptyState">Доступно только администратору.</div>`;
+    wrap.innerHTML = `<div class="emptyState">Доступно только администратору.${meError?("<br>Ошибка /api/me: "+escHtml(meError)):""}</div>`;
     return;
   }
   wrap.innerHTML = `<p class="muted small">Загрузка…</p>`;
@@ -501,7 +516,7 @@ async function renderAdmin(){
     const res = await apiJson("/api/admin/users","GET");
     users = res.users || [];
   }catch(e){
-    wrap.innerHTML = `<div class="emptyState">Не удалось загрузить список пользователей.</div>`;
+    wrap.innerHTML = `<div class="emptyState">Не удалось загрузить список пользователей.<br>Ошибка: ${escHtml((e&&e.message)||"неизвестна")}</div>`;
     return;
   }
   if(!users.length){

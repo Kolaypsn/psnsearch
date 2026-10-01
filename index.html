@@ -98,6 +98,11 @@ button,input,textarea{font-family:inherit;}
 .field label{display:block;font-size:12.5px;color:var(--text-secondary);margin-bottom:6px;font-weight:600;}
 .field input,.field textarea{width:100%;border:1px solid var(--border);background:var(--surface-2);color:var(--text);border-radius:var(--radius-s);padding:11px 12px;font-size:14.5px;outline:none;}
 .fieldHint{font-size:11.5px;color:var(--text-secondary);margin-top:6px;line-height:1.4;}
+.howto{margin-top:8px;padding:10px 12px;border-radius:12px;background:rgba(46,130,175,.08);border:1px solid rgba(46,130,175,.18);font-size:12.5px;line-height:1.45;color:var(--text-primary,inherit);}
+.howto b{font-weight:600;}
+.howto ol{margin:6px 0 0 18px;padding:0;}
+.howto li{margin:3px 0;}
+.howto .warn{margin-top:6px;color:var(--text-secondary);font-size:11.5px;}
 
 .paramsBox{display:flex;flex-direction:column;gap:2px;margin-bottom:16px;}
 .paramRow{display:flex;align-items:center;justify-content:space-between;padding:10px 2px;border-bottom:1px solid var(--border);}
@@ -205,9 +210,9 @@ const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : 
 
 /* ---------- плейсхолдеры — впишите свои значения перед публикацией ---------- */
 const SENDER_BOT_USERNAME = "psn_senderbot";       /* бот, который будет рассылать саму выдачу объявлений */
-const SUPPORT_USERNAME    = "your_support";          /* аккаунт поддержки */
+const SUPPORT_USERNAME    = "psn_helper_psn";          /* аккаунт поддержки */
 const FAQ_URL             = "https://telegra.ph/";   /* страница с частыми вопросами */
-const NEWS_CHANNEL_USERNAME = "your_channel";        /* новостной канал */
+const NEWS_CHANNEL_USERNAME = "PSNparser";        /* новостной канал */
 const TERMS_URL           = "https://telegra.ph/";   /* пользовательское соглашение */
 const PRIVACY_URL         = "https://telegra.ph/";   /* политика конфиденциальности */
 
@@ -310,7 +315,16 @@ function openSubSheet(id){
     <div class="field">
       <label>Ссылка на поиск объявлений</label>
       <input id="subUrl" type="url" placeholder="https://www.avito.ru/..." value="${escHtml(sub.url)}">
-      <p class="fieldHint">Ссылка на объявления — это поисковая ссылка, которая выводит все объявления при поиске (скопируйте её из адресной строки браузера на Авито после того, как настроите фильтры).</p>
+      <div class="howto">
+        <b>Как сделать ссылку</b>
+        <ol>
+          <li>Откройте avito.ru в браузере, выберите город и раздел (например, «Мобильные телефоны»).</li>
+          <li>Задайте нужные фильтры: модель, память, цену и т.д.</li>
+          <li><b>Обязательно выберите сортировку «По дате»</b> — тогда сверху всегда самые новые объявления. Без неё бот может пропускать новые.</li>
+          <li>Скопируйте адрес из адресной строки и вставьте сюда.</li>
+        </ol>
+        <div class="warn">Подсказка: в правильной ссылке есть кусочек <b>s=104</b> — это и есть сортировка по дате.</div>
+      </div>
     </div>
     <div class="paramsBox">
       ${paramRow("photo","Фотография",p.photo)}
@@ -349,10 +363,19 @@ async function createSub(){
   const url = $("#subUrl").value.trim();
   if(!name){ showToast("Укажите название"); return; }
   if(!url){ showToast("Укажите ссылку на поиск"); return; }
+  if(!/avito\.ru/i.test(url)){ showToast("Нужна ссылка на поиск с avito.ru"); return; }
+  if(!/[?&]s=104(&|#|$)/.test(url)){
+    const msg = "Похоже, в ссылке не выбрана сортировка «По дате» — бот может пропускать новые объявления. Всё равно сохранить?";
+    const okSave = await new Promise(res=>{
+      try{ if(tg && tg.showConfirm){ tg.showConfirm(msg, res); return; } }catch(e){}
+      res(window.confirm(msg));
+    });
+    if(!okSave) return;
+  }
   const btn = $("#subPrimaryBtn"); if(btn){ btn.disabled = true; }
   try{
     await apiJson("/api/subscriptions","POST", { name, url, params:readParamsFromForm() });
-    haptic("success"); showToast("Подписка добавлена");
+    haptic("success"); showToast("Подписка добавлена — откройте её и нажмите «Запустить поиск»");
     closeSubSheet(); await refreshSubs();
   }catch(e){
     showToast("Не удалось сохранить: " + e.message);

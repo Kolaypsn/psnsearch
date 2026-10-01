@@ -1,0 +1,492 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8"><title>PSN</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F3F7F9" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0A1116" media="(prefers-color-scheme: dark)">
+<style>
+:root{
+  color-scheme: light dark;
+  --bg:#F3F7F9; --surface:#FFFFFF; --surface-2:#E9F1F5; --text:#16222B; --text-secondary:#6C8492;
+  --border:#DCE7EC; --accent:#2F7FA8; --accent-strong:#1F6688; --on-accent:#FFFFFF;
+  --success:#2F9E5C; --danger:#D23B33; --warning:#C1861E;
+  --chip-bg:#E9F1F5;
+  --radius-s:8px; --radius-m:14px; --radius-l:20px;
+  --shadow:0 1px 2px rgba(15,35,45,.05),0 12px 30px rgba(15,35,45,.08);
+  --tg-content-safe-top:0px; --tg-content-safe-bottom:0px;
+  --tg-safe-total-top: calc(env(safe-area-inset-top,0px) + var(--tg-content-safe-top));
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    color-scheme: dark;
+    --bg:#0A1116; --surface:#131C22; --surface-2:#0F171C; --text:#EAF2F6; --text-secondary:#8CA3AF;
+    --border:#22323B; --accent:#5FB3DD; --accent-strong:#7AC2E6; --on-accent:#08141A;
+    --success:#49C07A; --danger:#E5584F; --warning:#E0A94A;
+    --chip-bg:#0F171C;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 12px 30px rgba(0,0,0,.5);
+  }
+}
+:root[data-theme="light"]{ color-scheme: light; }
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --bg:#0A1116; --surface:#131C22; --surface-2:#0F171C; --text:#EAF2F6; --text-secondary:#8CA3AF;
+  --border:#22323B; --accent:#5FB3DD; --accent-strong:#7AC2E6; --on-accent:#08141A;
+  --success:#49C07A; --danger:#E5584F; --warning:#E0A94A;
+  --chip-bg:#0F171C;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 12px 30px rgba(0,0,0,.5);
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",Roboto,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased;}
+button,input,textarea{font-family:inherit;}
+.muted{color:var(--text-secondary);}
+.small{font-size:12.5px;}
+
+/* ---------- brand header ---------- */
+.brandBar{display:flex;align-items:center;gap:10px;padding:calc(var(--tg-safe-total-top) + 12px) 16px 10px;}
+.brandLogo{width:30px;height:30px;border-radius:9px;flex:none;box-shadow:var(--shadow);}
+.brandName{font-size:16px;font-weight:800;letter-spacing:.2px;}
+
+/* ---------- views / layout ---------- */
+.app{max-width:520px;margin:0 auto;padding-bottom:calc(78px + env(safe-area-inset-bottom,0px));}
+.view{padding:2px 16px 8px;}
+.viewTitle{font-size:22px;font-weight:800;padding:10px 0 4px;}
+.viewSub{margin:0 0 14px;}
+
+/* ---------- subscription cards ---------- */
+.subCard{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-m);padding:14px;box-shadow:var(--shadow);margin-bottom:10px;cursor:pointer;}
+.subCard .dot{width:9px;height:9px;border-radius:50%;flex:none;background:var(--text-secondary);}
+.subCard.active .dot{background:var(--success);box-shadow:0 0 0 3px color-mix(in srgb, var(--success) 18%, transparent);}
+.subCard .si{flex:1;min-width:0;}
+.subCard .si b{display:block;font-size:15.5px;margin-bottom:2px;}
+.subCard .si span{font-size:12.5px;color:var(--text-secondary);}
+.subCard .chev{flex:none;color:var(--text-secondary);}
+.emptyState{background:var(--surface);border:1px dashed var(--border);border-radius:var(--radius-m);padding:22px 16px;text-align:center;color:var(--text-secondary);font-size:13.5px;margin-bottom:14px;}
+
+.btn{width:100%;border:none;border-radius:var(--radius-s);padding:13px;font-size:15px;font-weight:700;cursor:pointer;}
+.btn-primary{background:var(--accent);color:var(--on-accent);}
+.btn-secondary{background:var(--surface-2);color:var(--text);}
+.btn-outline{background:transparent;color:var(--accent);border:1px solid var(--accent);}
+.btn-danger-text{background:none;border:none;color:var(--danger);font-size:13.5px;font-weight:700;padding:10px;width:100%;cursor:pointer;}
+.btn[disabled]{opacity:.55;}
+
+/* ---------- info / profile ---------- */
+.linkRow{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-m);padding:13px 14px;box-shadow:var(--shadow);margin-bottom:10px;text-decoration:none;color:inherit;}
+.linkRow .ic{width:38px;height:38px;border-radius:50%;background:var(--accent);color:var(--on-accent);display:flex;align-items:center;justify-content:center;flex:none;}
+.linkRow .li{flex:1;min-width:0;}
+.linkRow .li b{display:block;font-size:14.5px;}
+.linkRow .li span{font-size:12px;color:var(--text-secondary);}
+
+.profileCard{display:flex;align-items:center;gap:14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-m);padding:16px;box-shadow:var(--shadow);margin:6px 0 14px;}
+.profileAvatar{width:56px;height:56px;border-radius:50%;flex:none;background:var(--accent);color:var(--on-accent);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;overflow:hidden;}
+.profileAvatar img{width:100%;height:100%;object-fit:cover;}
+.profileName{font-size:16px;font-weight:800;}
+.profileMeta{font-size:12.5px;color:var(--text-secondary);margin-top:2px;}
+.idRow{display:flex;justify-content:space-between;padding:10px 0;font-size:13.5px;border-bottom:1px solid var(--border);}
+.idRow:last-child{border-bottom:none;}
+
+/* ---------- bottom sheet (add/edit subscription) ---------- */
+.backdrop{position:fixed;inset:0;background:rgba(10,17,22,.45);z-index:40;}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:41;background:var(--surface);border-radius:20px 20px 0 0;max-height:88vh;overflow-y:auto;padding:16px 18px calc(20px + env(safe-area-inset-bottom,0px));box-shadow:var(--shadow);}
+.sheetHandle{width:36px;height:4px;border-radius:99px;background:var(--border);margin:0 auto 14px;}
+.sheetHead{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.sheetHead h3{margin:0;font-size:17px;font-weight:800;}
+.iconBtn{width:32px;height:32px;border-radius:9px;border:none;background:var(--surface-2);color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none;}
+
+.field{margin-bottom:14px;}
+.field label{display:block;font-size:12.5px;color:var(--text-secondary);margin-bottom:6px;font-weight:600;}
+.field input,.field textarea{width:100%;border:1px solid var(--border);background:var(--surface-2);color:var(--text);border-radius:var(--radius-s);padding:11px 12px;font-size:14.5px;outline:none;}
+.fieldHint{font-size:11.5px;color:var(--text-secondary);margin-top:6px;line-height:1.4;}
+
+.paramsBox{display:flex;flex-direction:column;gap:2px;margin-bottom:16px;}
+.paramRow{display:flex;align-items:center;justify-content:space-between;padding:10px 2px;border-bottom:1px solid var(--border);}
+.paramRow:last-child{border-bottom:none;}
+.paramRow span{font-size:14px;}
+.switchCtl{position:relative;width:42px;height:25px;flex:none;}
+.switchCtl input{position:absolute;inset:0;opacity:0;margin:0;cursor:pointer;z-index:1;}
+.switchCtl .track{position:absolute;inset:0;border-radius:99px;background:var(--border);transition:background .15s;}
+.switchCtl .thumb{position:absolute;top:2.5px;left:2.5px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:transform .15s;}
+.switchCtl input:checked + .track{background:var(--accent);}
+.switchCtl input:checked + .track + .thumb{transform:translateX(17px);}
+
+.statusBadge{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;padding:6px 10px;border-radius:99px;background:var(--surface-2);margin-bottom:14px;}
+.statusBadge .dot{width:8px;height:8px;border-radius:50%;background:var(--text-secondary);}
+.statusBadge.on{color:var(--success);}
+.statusBadge.on .dot{background:var(--success);}
+.statusBadge.off{color:var(--text-secondary);}
+
+.senderHint{font-size:12px;color:var(--text-secondary);line-height:1.5;margin:4px 0 16px;}
+.senderHint a{color:var(--accent);font-weight:700;text-decoration:none;}
+
+.gap8{height:8px;}
+.gap12{height:12px;}
+
+/* ---------- confirm dialog ---------- */
+.modal{position:fixed;left:16px;right:16px;top:50%;transform:translateY(-50%);z-index:51;background:var(--surface);border-radius:var(--radius-l);padding:20px;box-shadow:var(--shadow);}
+.modal p{margin:0 0 16px;font-size:14.5px;line-height:1.5;}
+.modalBtns{display:flex;gap:10px;}
+.modalBtns .btn{width:auto;flex:1;}
+
+/* ---------- tab bar ---------- */
+.tabbar{position:fixed;left:0;right:0;bottom:0;display:flex;background:var(--surface);border-top:1px solid var(--border);padding:8px 6px calc(6px + env(safe-area-inset-bottom,0px));z-index:30;}
+.tabBtn{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;color:var(--text-secondary);font-size:11px;font-weight:600;padding:6px 2px;cursor:pointer;}
+.tabBtn svg{width:23px;height:23px;}
+.tabBtn.active{color:var(--accent);}
+
+.toast{position:fixed;left:50%;bottom:96px;transform:translateX(-50%);background:var(--text);color:var(--bg);padding:11px 18px;border-radius:999px;font-size:13.5px;font-weight:600;z-index:70;box-shadow:var(--shadow);max-width:88%;text-align:center;}
+</style>
+</head>
+<body>
+
+<div class="app" id="app">
+  <div class="brandBar">
+    <svg class="brandLogo" viewBox="0 0 64 64" aria-hidden="true">
+      <defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#D3E2EB"/><stop offset="1" stop-color="#86ACBF"/>
+      </linearGradient></defs>
+      <rect x="0" y="0" width="64" height="64" rx="16" fill="url(#bg)"/>
+      <circle cx="23" cy="25" r="11" fill="#1E2226"/>
+      <circle cx="41" cy="31" r="12" fill="#1E2226"/>
+      <circle cx="25" cy="45" r="11" fill="#1E2226"/>
+      <text x="23" y="29.5" text-anchor="middle" font-size="12" font-weight="700" fill="#EEF2F4" font-family="-apple-system,sans-serif">P</text>
+      <text x="41" y="35.5" text-anchor="middle" font-size="13" font-weight="700" fill="#EEF2F4" font-family="-apple-system,sans-serif">S</text>
+      <text x="25" y="49.5" text-anchor="middle" font-size="12" font-weight="700" fill="#EEF2F4" font-family="-apple-system,sans-serif">N</text>
+    </svg>
+    <span class="brandName">PSN</span>
+  </div>
+
+  <!-- ---------- Подписки ---------- -->
+  <main class="view" id="subsView">
+    <h2 class="viewTitle">Подписки</h2>
+    <p class="muted small viewSub">Здесь — все ваши активные отслеживания объявлений.</p>
+    <div id="subsList"></div>
+    <button class="btn btn-primary" id="addSubBtn" type="button">Добавить подписку</button>
+  </main>
+
+  <!-- ---------- Информация ---------- -->
+  <main class="view" id="infoView" hidden>
+    <h2 class="viewTitle">Информация</h2>
+    <div id="infoLinks"></div>
+  </main>
+
+  <!-- ---------- Профиль ---------- -->
+  <main class="view" id="profileView" hidden>
+    <h2 class="viewTitle">Профиль</h2>
+    <div id="profileBlock"></div>
+  </main>
+
+  <nav class="tabbar">
+    <button class="tabBtn" data-tab="info"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><circle cx="12" cy="8" r=".6" fill="currentColor" stroke="none"/></svg><span>Информация</span></button>
+    <button class="tabBtn active" data-tab="subs"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h14v17l-7-4-7 4z"/></svg><span>Подписки</span></button>
+    <button class="tabBtn" data-tab="profile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg><span>Профиль</span></button>
+  </nav>
+</div>
+
+<div class="backdrop" id="subBackdrop" hidden></div>
+<section class="sheet" id="subSheet" hidden></section>
+
+<div class="backdrop" id="confirmBackdrop" hidden></div>
+<section class="modal" id="confirmModal" hidden></section>
+
+<script>
+(function(){
+"use strict";
+const $=s=>document.querySelector(s), $all=s=>Array.from(document.querySelectorAll(s));
+const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
+
+/* ---------- плейсхолдеры — впишите свои значения перед публикацией ---------- */
+const SENDER_BOT_USERNAME = "your_sender_bot";       /* бот, который будет рассылать саму выдачу объявлений */
+const SUPPORT_USERNAME    = "your_support";          /* аккаунт поддержки */
+const FAQ_URL             = "https://telegra.ph/";   /* страница с частыми вопросами */
+const NEWS_CHANNEL_USERNAME = "your_channel";        /* новостной канал */
+const TERMS_URL           = "https://telegra.ph/";   /* пользовательское соглашение */
+const PRIVACY_URL         = "https://telegra.ph/";   /* политика конфиденциальности */
+
+/* ---------- бэкенд (Cloudflare Worker avito-head-api) ---------- */
+/* После деплоя воркера впишите сюда его адрес, например "https://avito-head-api.ваш-акк.workers.dev" */
+const API_BASE = "https://avito-head-api.psn-store.workers.dev";
+const LS_SUBS = "psn_head_subs_v1"; /* локальный кэш — чтобы список был виден сразу, даже пока грузится сервер */
+function safeGet(key, fallback){ try{ const v=localStorage.getItem(key); return v?JSON.parse(v):fallback; }catch(e){ return fallback; } }
+function safeSet(key, val){ try{ localStorage.setItem(key, JSON.stringify(val)); return true; }catch(e){ return false; } }
+function escHtml(s){ return String(s==null?"":s).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+function haptic(type){ try{ if(tg && tg.HapticFeedback){ if(type==="success"||type==="error"||type==="warning") tg.HapticFeedback.notificationOccurred(type); else if(type==="selection") tg.HapticFeedback.selectionChanged(); else tg.HapticFeedback.impactOccurred(type||"light"); } }catch(e){} }
+function showToast(text){
+  const t=document.createElement("div"); t.className="toast"; t.textContent=text; document.body.appendChild(t);
+  setTimeout(()=>{ t.remove(); }, 2200);
+}
+function tgInitDataHeader(){ try{ return (tg && tg.initData) ? { "X-Telegram-Init-Data": tg.initData } : {}; }catch(e){ return {}; } }
+async function api(path, opts={}){
+  if(!API_BASE || API_BASE.includes("ВАШ-АККАУНТ")) throw new Error("API_BASE не настроен");
+  const res = await fetch(API_BASE+path, { ...opts, headers:{ ...(opts.headers||{}) } });
+  if(!res.ok){ let msg="Ошибка сервера"; try{ msg=(await res.json()).error||msg; }catch(e){} throw new Error(msg); }
+  const ct = res.headers.get("content-type")||"";
+  return ct.includes("application/json") ? res.json() : res.text();
+}
+async function apiJson(path, method, body){
+  return api(path, { method, headers:{ "Content-Type":"application/json", ...tgInitDataHeader() }, body: body!==undefined?JSON.stringify(body):undefined });
+}
+
+/* ---------- данные подписок ----------
+   Хранятся на сервере (avito-head-api) — список тянется через GET /api/subscriptions, изменения
+   уходят туда же. localStorage используется только как кэш для мгновенного отображения при
+   открытии (пока идёт запрос к серверу) и на случай, если сервер на секунду недоступен. */
+let subsCache = safeGet(LS_SUBS, []);
+let subsLoadFailed = false;
+function loadSubs(){ return subsCache; }
+function genId(){ return "s" + Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+
+function defaultParams(){ return { photo:true, desc:true, seller:true, priceDrop:true }; }
+
+async function refreshSubs(){
+  try{
+    const data = await apiJson("/api/subscriptions","GET");
+    subsCache = (data.subscriptions||[]).map(s=>({ id:s.id, name:s.name, url:s.url, params:s.params||defaultParams(), active:!!s.active }));
+    safeSet(LS_SUBS, subsCache);
+    subsLoadFailed = false;
+  }catch(e){
+    subsLoadFailed = true; // остаёмся на закэшированной копии
+  }
+  renderSubs();
+}
+
+/* ---------- рендер: вкладка «Подписки» ---------- */
+function renderSubs(){
+  const list = loadSubs();
+  const wrap = $("#subsList");
+  if(subsLoadFailed && !list.length){
+    wrap.innerHTML = `<div class="emptyState">Не удалось загрузить подписки — сервер недоступен.<br>Проверьте API_BASE в коде приложения.</div>`;
+    return;
+  }
+  if(!list.length){
+    wrap.innerHTML = `<div class="emptyState">Пока нет ни одной подписки.<br>Нажмите «Добавить подписку», чтобы начать отслеживать объявления.</div>`;
+    return;
+  }
+  wrap.innerHTML = list.map(s=>`
+    <div class="subCard ${s.active?"active":""}" data-sub="${s.id}">
+      <span class="dot"></span>
+      <div class="si">
+        <b>${escHtml(s.name || "Без названия")}</b>
+        <span>${s.active?"Работает":"Остановлена"}${s.url?" · ссылка задана":" · ссылка не задана"}</span>
+      </div>
+      <svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+    </div>`).join("");
+  $all("[data-sub]").forEach(el=> el.addEventListener("click", ()=> openSubSheet(el.dataset.sub)) );
+}
+
+/* ---------- лист добавления/редактирования подписки ---------- */
+let editingId = null;
+function openSubSheet(id){
+  editingId = id || null;
+  const sub = id ? loadSubs().find(s=>s.id===id) : { name:"", url:"", params:defaultParams(), active:false };
+  if(id && !sub){ return; }
+  const p = sub.params || defaultParams();
+  $("#subSheet").innerHTML = `
+    <div class="sheetHandle"></div>
+    <div class="sheetHead">
+      <h3>${id ? "Подписка" : "Новая подписка"}</h3>
+      <button class="iconBtn" id="subCloseBtn" type="button">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    ${id ? `<div class="statusBadge ${sub.active?"on":"off"}" id="subStatusBadge"><span class="dot"></span>${sub.active?"Поиск работает":"Поиск остановлен"}</div>` : ""}
+    <div class="field">
+      <label>Название</label>
+      <input id="subName" type="text" placeholder="Например, Мск" value="${escHtml(sub.name)}">
+    </div>
+    <div class="field">
+      <label>Ссылка на поиск объявлений</label>
+      <input id="subUrl" type="url" placeholder="https://www.avito.ru/..." value="${escHtml(sub.url)}">
+      <p class="fieldHint">Ссылка на объявления — это поисковая ссылка, которая выводит все объявления при поиске (скопируйте её из адресной строки браузера на Авито после того, как настроите фильтры).</p>
+    </div>
+    <div class="paramsBox">
+      ${paramRow("photo","Фотография",p.photo)}
+      ${paramRow("desc","Описание",p.desc)}
+      ${paramRow("seller","Информация о продавце",p.seller)}
+      ${paramRow("priceDrop","Снижение цены",p.priceDrop)}
+    </div>
+    <p class="fieldHint" style="margin:-8px 0 16px;">Параметры — какая информация будет приходить дополнительно вместе с объявлением.</p>
+    <button class="btn ${id && sub.active ? "btn-secondary" : "btn-primary"}" id="subPrimaryBtn" type="button">
+      ${id ? (sub.active ? "Остановить поиск" : "Запустить поиск") : "Создать подписку"}
+    </button>
+    <div class="gap8"></div>
+    <button class="btn btn-outline" id="subSenderBtn" type="button">Перейти в бота отправителя</button>
+    <p class="senderHint">Перед первым запуском не забудьте <a href="#" id="subSenderLink">запустить бота отправителя</a> — именно он присылает саму выдачу объявлений.</p>
+    ${id ? `<button class="btn-danger-text" id="subDeleteBtn" type="button">Удалить подписку</button>` : ""}
+  `;
+  $("#subBackdrop").hidden=false; $("#subSheet").hidden=false;
+  $("#subCloseBtn").addEventListener("click", closeSubSheet);
+  $("#subBackdrop").addEventListener("click", closeSubSheet);
+  $("#subSenderBtn").addEventListener("click", openSenderBot);
+  $("#subSenderLink").addEventListener("click", e=>{ e.preventDefault(); openSenderBot(); });
+  $("#subPrimaryBtn").addEventListener("click", ()=> id ? toggleActive(id) : createSub());
+  if(id) $("#subDeleteBtn").addEventListener("click", ()=> confirmDeleteSub(id));
+}
+function paramRow(key,label,checked){
+  return `<div class="paramRow"><span>${label}</span>
+    <label class="switchCtl"><input type="checkbox" id="p_${key}" ${checked?"checked":""}><span class="track"></span><span class="thumb"></span></label>
+  </div>`;
+}
+function closeSubSheet(){ $("#subBackdrop").hidden=true; $("#subSheet").hidden=true; editingId=null; }
+function readParamsFromForm(){
+  return { photo:$("#p_photo").checked, desc:$("#p_desc").checked, seller:$("#p_seller").checked, priceDrop:$("#p_priceDrop").checked };
+}
+async function createSub(){
+  const name = $("#subName").value.trim();
+  const url = $("#subUrl").value.trim();
+  if(!name){ showToast("Укажите название"); return; }
+  if(!url){ showToast("Укажите ссылку на поиск"); return; }
+  const btn = $("#subPrimaryBtn"); if(btn){ btn.disabled = true; }
+  try{
+    await apiJson("/api/subscriptions","POST", { name, url, params:readParamsFromForm() });
+    haptic("success"); showToast("Подписка добавлена");
+    closeSubSheet(); await refreshSubs();
+  }catch(e){
+    showToast("Не удалось сохранить: " + e.message);
+    if(btn) btn.disabled = false;
+  }
+}
+async function saveSubEdits(id){
+  await apiJson(`/api/subscriptions/${encodeURIComponent(id)}`, "PUT", {
+    name: $("#subName").value.trim(),
+    url: $("#subUrl").value.trim(),
+    params: readParamsFromForm(),
+  });
+}
+/* Реальный старт/стоп отслеживания: переключаем active на сервере — ваш парсер на VPS сам
+   забирает список активных подписок через GET /api/parser/subscriptions и решает, что делать. */
+async function toggleActive(id){
+  const btn = $("#subPrimaryBtn"); if(btn){ btn.disabled = true; }
+  try{
+    await saveSubEdits(id);
+    const res = await apiJson(`/api/subscriptions/${encodeURIComponent(id)}/toggle`, "PATCH");
+    haptic(res.active ? "success" : "warning");
+    showToast(res.active ? "Поиск запущен" : "Поиск остановлен");
+    closeSubSheet(); await refreshSubs();
+  }catch(e){
+    showToast("Не удалось изменить: " + e.message);
+    if(btn) btn.disabled = false;
+  }
+}
+function confirmDeleteSub(id){
+  const sub = loadSubs().find(s=>s.id===id);
+  $("#confirmModal").innerHTML = `
+    <p>Удалить подписку «${escHtml(sub ? sub.name : "")}»? Это действие нельзя отменить.</p>
+    <div class="modalBtns">
+      <button class="btn btn-secondary" id="cdCancel" type="button">Отмена</button>
+      <button class="btn" style="background:var(--danger);color:#fff;" id="cdOk" type="button">Удалить</button>
+    </div>`;
+  $("#confirmBackdrop").hidden=false; $("#confirmModal").hidden=false;
+  $("#cdCancel").addEventListener("click", closeConfirm);
+  $("#confirmBackdrop").addEventListener("click", closeConfirm);
+  $("#cdOk").addEventListener("click", async ()=>{
+    try{
+      await apiJson(`/api/subscriptions/${encodeURIComponent(id)}`, "DELETE");
+      closeConfirm(); closeSubSheet(); await refreshSubs(); haptic("warning"); showToast("Подписка удалена");
+    }catch(e){
+      showToast("Не удалось удалить: " + e.message);
+    }
+  });
+}
+function closeConfirm(){ $("#confirmBackdrop").hidden=true; $("#confirmModal").hidden=true; }
+
+function openSenderBot(){
+  const url = "https://t.me/" + SENDER_BOT_USERNAME;
+  try{ if(tg && tg.openTelegramLink){ tg.openTelegramLink(url); return; } }catch(e){}
+  window.open(url, "_blank");
+}
+
+$("#addSubBtn").addEventListener("click", ()=> openSubSheet(null));
+
+/* ---------- вкладка «Информация» ---------- */
+function renderInfo(){
+  const items = [
+    { icon:iconSupport(), title:"Поддержка", sub:"@"+SUPPORT_USERNAME, href:"https://t.me/"+SUPPORT_USERNAME },
+    { icon:iconFaq(), title:"Частые вопросы", sub:"telegra.ph", href:FAQ_URL },
+    { icon:iconNews(), title:"Новостной канал", sub:"@"+NEWS_CHANNEL_USERNAME, href:"https://t.me/"+NEWS_CHANNEL_USERNAME },
+    { icon:iconDoc(), title:"Пользовательское соглашение", sub:"telegra.ph", href:TERMS_URL },
+    { icon:iconDoc(), title:"Политика конфиденциальности", sub:"telegra.ph", href:PRIVACY_URL },
+  ];
+  $("#infoLinks").innerHTML = items.map(it=>`
+    <a class="linkRow" href="${it.href}" target="_blank" rel="noopener">
+      <span class="ic">${it.icon}</span>
+      <span class="li"><b>${it.title}</b><span>${it.sub}</span></span>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;color:var(--text-secondary);"><path d="M9 6l6 6-6 6"/></svg>
+    </a>`).join("");
+}
+function iconSupport(){ return `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l2.5 1.5"/></svg>`; }
+function iconFaq(){ return `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 015 .5c0 1.5-2.5 1.7-2.5 3.5"/><circle cx="12" cy="17" r=".6" fill="currentColor" stroke="none"/></svg>`; }
+function iconNews(){ return `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11a8 8 0 018-8"/><path d="M4 11a4 4 0 014-4"/><circle cx="5" cy="19" r="2"/><path d="M4 11l11 8"/></svg>`; }
+function iconDoc(){ return `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h7l4 4v14H7z"/><path d="M10 12h6M10 16h6M10 8h2"/></svg>`; }
+
+/* ---------- вкладка «Профиль» ---------- */
+function renderProfile(){
+  const u = (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) || null;
+  if(!u){
+    $("#profileBlock").innerHTML = `<p class="muted small">Откройте приложение через Telegram, чтобы увидеть профиль.</p>`;
+    return;
+  }
+  const name = [u.first_name, u.last_name].filter(Boolean).join(" ") || "Без имени";
+  const initial = (u.first_name || "?").trim().charAt(0).toUpperCase();
+  $("#profileBlock").innerHTML = `
+    <div class="profileCard">
+      <div class="profileAvatar">${u.photo_url ? `<img src="${escHtml(u.photo_url)}" alt="">` : initial}</div>
+      <div>
+        <div class="profileName">${escHtml(name)}</div>
+        <div class="profileMeta">${u.username ? "@"+escHtml(u.username) : "Без username"}</div>
+      </div>
+    </div>
+    <div class="idRow"><span class="muted">Telegram ID</span><span>${u.id}</span></div>
+    <div class="idRow"><span class="muted">Подписок</span><span>${loadSubs().length}</span></div>
+    <div class="idRow"><span class="muted">Активных</span><span>${loadSubs().filter(s=>s.active).length}</span></div>
+  `;
+}
+
+/* ---------- переключение вкладок ---------- */
+function switchTab(name){
+  $all("[data-tab]").forEach(b=> b.classList.toggle("active", b.dataset.tab===name));
+  $("#subsView").hidden = name!=="subs";
+  $("#infoView").hidden = name!=="info";
+  $("#profileView").hidden = name!=="profile";
+  if(name==="subs") renderSubs();
+  if(name==="info") renderInfo();
+  if(name==="profile") renderProfile();
+}
+$all("[data-tab]").forEach(b=> b.addEventListener("click", ()=>{ haptic("light"); switchTab(b.dataset.tab); }) );
+
+/* ---------- Telegram WebApp init (тема/safe-area — как в основном приложении) ---------- */
+function syncChromeColor(){
+  try{
+    const bg = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim();
+    if(!bg) return;
+    $all('meta[name="theme-color"]').forEach(m=>m.setAttribute('content', bg));
+    if(tg){ try{ if(tg.setHeaderColor) tg.setHeaderColor(bg); }catch(e){} try{ if(tg.setBackgroundColor) tg.setBackgroundColor(bg); }catch(e){} }
+  }catch(e){}
+}
+function applyTgSafeAreas(){
+  try{
+    if(!tg) return;
+    const csa = tg.contentSafeAreaInset || {top:0,bottom:0};
+    document.documentElement.style.setProperty('--tg-content-safe-top', Math.max(0, Number(csa.top)||0)+'px');
+  }catch(e){}
+}
+function initTelegram(){
+  try{
+    if(tg){
+      tg.ready(); tg.expand();
+      applyTgSafeAreas();
+      setTimeout(applyTgSafeAreas, 300);
+      if(tg.colorScheme) document.documentElement.dataset.theme = tg.colorScheme;
+      syncChromeColor();
+      if(tg.onEvent){
+        tg.onEvent("themeChanged", ()=>{ if(tg.colorScheme) document.documentElement.dataset.theme=tg.colorScheme; syncChromeColor(); });
+        tg.onEvent("safeAreaChanged", applyTgSafeAreas);
+        tg.onEvent("contentSafeAreaChanged", applyTgSafeAreas);
+      }
+    }
+  }catch(e){}
+}
+
+initTelegram();
+renderSubs(); /* мгновенно показываем закэшированный список, пока грузится сервер */
+refreshSubs();
+})();
+</script>
+</body></html>

@@ -559,16 +559,32 @@ function applyTgSafeAreas(){
     document.documentElement.style.setProperty('--tg-content-safe-top', Math.max(0, Number(csa.top)||0)+'px');
   }catch(e){}
 }
+function maximizeViewport(){
+  try{
+    if(!tg) return;
+    /* tg.expand() разворачивает только в пределах "старого" полукомпактного/полного
+       режима — он НЕ даёт настоящую полную высоту экрана на многих актуальных клиентах
+       (особенно iOS). С Bot API 8.0 для этого есть отдельный метод requestFullscreen() —
+       именно он даёт те самые "4/5-почти весь экран", которые expand() больше не даёт
+       по умолчанию. Вызываем оба: fullscreen — основное, expand — подстраховка/фолбэк
+       для старых клиентов, где requestFullscreen ещё не существует. */
+    if(tg.requestFullscreen && (!tg.isVersionAtLeast || tg.isVersionAtLeast('8.0'))){
+      try{ tg.requestFullscreen(); }catch(e){}
+    }
+    try{ tg.expand(); }catch(e){}
+  }catch(e){}
+}
 function initTelegram(){
   try{
     if(tg){
       tg.ready();
-      tg.expand();
+      maximizeViewport();
       /* запрещаем жест "смахнуть вниз", чтобы Telegram не схлопывал приложение обратно
          в компактный режим при случайном свайпе по контенту */
       try{ if(tg.disableVerticalSwipes) tg.disableVerticalSwipes(); }catch(e){}
       applyTgSafeAreas();
       setTimeout(applyTgSafeAreas, 300);
+      setTimeout(maximizeViewport, 300); /* некоторые клиенты игнорируют вызов до полной отрисовки */
       if(tg.colorScheme) document.documentElement.dataset.theme = tg.colorScheme;
       syncChromeColor();
       if(tg.onEvent){
@@ -577,7 +593,8 @@ function initTelegram(){
         tg.onEvent("contentSafeAreaChanged", applyTgSafeAreas);
         /* подстраховка: если по какой-то причине открылись в компактном режиме —
            как только Telegram пришлёт изменение вьюпорта, пробуем развернуться ещё раз */
-        tg.onEvent("viewportChanged", ()=>{ try{ if(tg.isExpanded===false) tg.expand(); }catch(e){} });
+        tg.onEvent("viewportChanged", ()=>{ try{ if(tg.isExpanded===false) maximizeViewport(); }catch(e){} });
+        tg.onEvent("fullscreenFailed", ()=>{ try{ tg.expand(); }catch(e){} }); /* клиент не поддержал fullscreen — остаёмся на expand() */
       }
     }
   }catch(e){}

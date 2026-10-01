@@ -173,10 +173,18 @@ button,input,textarea{font-family:inherit;}
     <div id="profileBlock"></div>
   </main>
 
+  <!-- ---------- Админка (видна только администратору) ---------- -->
+  <main class="view" id="adminView" hidden>
+    <h2 class="viewTitle">Админка</h2>
+    <p class="muted small viewSub">Все пользователи приложения и их подписки.</p>
+    <div id="adminList"></div>
+  </main>
+
   <nav class="tabbar">
     <button class="tabBtn" data-tab="info"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><circle cx="12" cy="8" r=".6" fill="currentColor" stroke="none"/></svg><span>Информация</span></button>
     <button class="tabBtn active" data-tab="subs"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h14v17l-7-4-7 4z"/></svg><span>Подписки</span></button>
     <button class="tabBtn" data-tab="profile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg><span>Профиль</span></button>
+    <button class="tabBtn" data-tab="admin" id="adminTabBtn" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.6-3 8.4-7 10-4-1.6-7-5.4-7-10V6l7-3z"/></svg><span>Админ</span></button>
   </nav>
 </div>
 
@@ -230,6 +238,7 @@ async function apiJson(path, method, body){
    открытии (пока идёт запрос к серверу) и на случай, если сервер на секунду недоступен. */
 let subsCache = safeGet(LS_SUBS, []);
 let subsLoadFailed = false;
+let meState = null; /* {telegramId, username, firstName, deliveryTarget, isAdmin} — профиль текущего пользователя, см. GET /api/me */
 function loadSubs(){ return subsCache; }
 function genId(){ return "s" + Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
 
@@ -425,6 +434,7 @@ function renderProfile(){
   }
   const name = [u.first_name, u.last_name].filter(Boolean).join(" ") || "Без имени";
   const initial = (u.first_name || "?").trim().charAt(0).toUpperCase();
+  const deliveringHere = meState && meState.deliveryTarget === "head";
   $("#profileBlock").innerHTML = `
     <div class="profileCard">
       <div class="profileAvatar">${u.photo_url ? `<img src="${escHtml(u.photo_url)}" alt="">` : initial}</div>
@@ -436,7 +446,87 @@ function renderProfile(){
     <div class="idRow"><span class="muted">Telegram ID</span><span>${u.id}</span></div>
     <div class="idRow"><span class="muted">Подписок</span><span>${loadSubs().length}</span></div>
     <div class="idRow"><span class="muted">Активных</span><span>${loadSubs().filter(s=>s.active).length}</span></div>
+    ${meState ? `
+    <div class="paramsBox" style="margin-top:16px;">
+      <div class="paramRow">
+        <span>Получать выдачу прямо здесь (вместо бота-отправителя)</span>
+        <label class="switchCtl"><input type="checkbox" id="deliveryToggle" ${deliveringHere?"checked":""}><span class="track"></span><span class="thumb"></span></label>
+      </div>
+    </div>
+    <p class="fieldHint" style="margin:8px 0 0;">${deliveringHere ? "Сейчас новые объявления приходят прямо в этого бота." : "Сейчас новые объявления приходят в бота-отправителя — переключите, если хотите получать их здесь."}</p>
+    ` : ""}
   `;
+  const toggle = $("#deliveryToggle");
+  if(toggle){
+    toggle.addEventListener("change", async ()=>{
+      const target = toggle.checked ? "head" : "sender";
+      toggle.disabled = true;
+      try{
+        const res = await apiJson("/api/me","PUT",{ deliveryTarget: target });
+        meState = res.user;
+        haptic("success");
+        showToast(target==="head" ? "Выдача будет приходить сюда" : "Выдача будет приходить в бота-отправителя");
+      }catch(e){
+        toggle.checked = !toggle.checked;
+        showToast("Не удалось сохранить — попробуйте ещё раз");
+      }
+      toggle.disabled = false;
+      renderProfile();
+    });
+  }
+}
+
+/* ---------- мой профиль с сервера (кто я, куда мне идёт выдача, админ ли я) ---------- */
+async function loadMe(){
+  try{
+    const res = await apiJson("/api/me","GET");
+    meState = res.user;
+  }catch(e){
+    meState = null;
+  }
+  const adminBtn = $("#adminTabBtn");
+  if(adminBtn) adminBtn.hidden = !(meState && meState.isAdmin);
+}
+
+/* ---------- вкладка «Админ» (видна только администратору) ---------- */
+async function renderAdmin(){
+  const wrap = $("#adminList");
+  if(!meState || !meState.isAdmin){
+    wrap.innerHTML = `<div class="emptyState">Доступно только администратору.</div>`;
+    return;
+  }
+  wrap.innerHTML = `<p class="muted small">Загрузка…</p>`;
+  let users;
+  try{
+    const res = await apiJson("/api/admin/users","GET");
+    users = res.users || [];
+  }catch(e){
+    wrap.innerHTML = `<div class="emptyState">Не удалось загрузить список пользователей.</div>`;
+    return;
+  }
+  if(!users.length){
+    wrap.innerHTML = `<div class="emptyState">Пока ни одного пользователя.</div>`;
+    return;
+  }
+  wrap.innerHTML = users.map(u=>{
+    const name = u.firstName || (u.username ? "@"+u.username : "Без имени");
+    const subs = u.subscriptions || [];
+    const subsHtml = subs.length ? subs.map(s=>`
+      <div class="idRow"><span>${escHtml(s.name||"Без названия")}${s.active?" · работает":" · остановлена"}</span></div>
+      <p class="fieldHint" style="margin:-4px 0 8px;word-break:break-all;">${escHtml(s.url||"")}</p>
+    `).join("") : `<p class="muted small" style="margin:4px 0 8px;">Подписок нет</p>`;
+    return `
+      <div class="profileCard" style="align-items:flex-start;">
+        <div class="profileAvatar">${(name||"?").trim().charAt(0).toUpperCase()}</div>
+        <div style="flex:1;min-width:0;">
+          <div class="profileName">${escHtml(name)}${u.isAdmin?" · админ":""}</div>
+          <div class="profileMeta">Telegram ID ${u.telegramId}${u.username?" · @"+escHtml(u.username):""}</div>
+          <div class="profileMeta">Доставка: ${u.deliveryTarget==="head"?"этот бот":"бот-отправитель"} · подписок: ${subs.length}</div>
+        </div>
+      </div>
+      <div class="paramsBox" style="margin:-4px 0 16px;">${subsHtml}</div>
+    `;
+  }).join("");
 }
 
 /* ---------- переключение вкладок ---------- */
@@ -445,9 +535,11 @@ function switchTab(name){
   $("#subsView").hidden = name!=="subs";
   $("#infoView").hidden = name!=="info";
   $("#profileView").hidden = name!=="profile";
+  $("#adminView").hidden = name!=="admin";
   if(name==="subs") renderSubs();
   if(name==="info") renderInfo();
   if(name==="profile") renderProfile();
+  if(name==="admin") renderAdmin();
 }
 $all("[data-tab]").forEach(b=> b.addEventListener("click", ()=>{ haptic("light"); switchTab(b.dataset.tab); }) );
 
@@ -470,7 +562,11 @@ function applyTgSafeAreas(){
 function initTelegram(){
   try{
     if(tg){
-      tg.ready(); tg.expand();
+      tg.ready();
+      tg.expand();
+      /* запрещаем жест "смахнуть вниз", чтобы Telegram не схлопывал приложение обратно
+         в компактный режим при случайном свайпе по контенту */
+      try{ if(tg.disableVerticalSwipes) tg.disableVerticalSwipes(); }catch(e){}
       applyTgSafeAreas();
       setTimeout(applyTgSafeAreas, 300);
       if(tg.colorScheme) document.documentElement.dataset.theme = tg.colorScheme;
@@ -479,6 +575,9 @@ function initTelegram(){
         tg.onEvent("themeChanged", ()=>{ if(tg.colorScheme) document.documentElement.dataset.theme=tg.colorScheme; syncChromeColor(); });
         tg.onEvent("safeAreaChanged", applyTgSafeAreas);
         tg.onEvent("contentSafeAreaChanged", applyTgSafeAreas);
+        /* подстраховка: если по какой-то причине открылись в компактном режиме —
+           как только Telegram пришлёт изменение вьюпорта, пробуем развернуться ещё раз */
+        tg.onEvent("viewportChanged", ()=>{ try{ if(tg.isExpanded===false) tg.expand(); }catch(e){} });
       }
     }
   }catch(e){}
@@ -487,6 +586,7 @@ function initTelegram(){
 initTelegram();
 renderSubs(); /* мгновенно показываем закэшированный список, пока грузится сервер */
 refreshSubs();
+loadMe(); /* тянет профиль (в т.ч. isAdmin) — показывает вкладку «Админ», если нужно */
 })();
 </script>
 </body></html>

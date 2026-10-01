@@ -1,5 +1,8 @@
 <!doctype html><html lang="ru"><head><meta charset="utf-8"><title>PSN</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<!-- Без этого скрипта window.Telegram вообще не существует — ни авторизация, ни expand(),
+     ни тема не могут работать. Должен грузиться ДО основного <script> в конце файла. -->
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
 <meta name="theme-color" content="#F3F7F9" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0A1116" media="(prefers-color-scheme: dark)">
 <style>

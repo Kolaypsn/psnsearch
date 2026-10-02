@@ -1056,7 +1056,8 @@ async function renderStatusPanel(users){
   const sources = (st.sources||[]).map(x=>`<div class="idRow"><span>${escHtml(x.name)}</span>
       <span class="muted">${agoText(x.last_ok_ago)} · ок ${x.ok15} / сбоев ${x.fail15}${x.overflow15?` · переполн. ${x.overflow15}`:""}</span></div>`).join("")
     || `<p class="muted small">нет активных</p>`;
-  const lat = st.latency ? `медиана ${st.latency.median} с · 90% быстрее ${st.latency.p90} с (${st.latency.count} увед. за 10 мин)` : "ещё не посчитана";
+  const lat = st.latency ? `медиана ${st.latency.median} с · 90% быстрее ${st.latency.p90} с (${st.latency.count} увед. за 10 мин)`
+      + (st.latency.window!==undefined ? `<br>окно обнаружения ${st.latency.window} с → наша часть ≈ ${st.latency.ours} с, Авито ≈ ${st.latency.avito} с` : "") : "ещё не посчитана";
   const sent = Object.entries(st.sent_hour||{}).sort((a,b)=>b[1]-a[1]).map(([id,n])=>`<div class="idRow"><span>${escHtml(String(name(id)))}</span><span class="muted">${n}</span></div>`).join("")
     || `<p class="muted small">за последний час уведомлений не было</p>`;
   const errs = Object.entries(st.deliver_errors||{}).map(([id,d])=>{

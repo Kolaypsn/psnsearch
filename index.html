@@ -88,7 +88,7 @@ button,input,textarea{font-family:inherit;}
 
 /* ---------- bottom sheet (add/edit subscription) ---------- */
 .backdrop{position:fixed;inset:0;background:rgba(10,17,22,.45);z-index:40;}
-.sheet{position:fixed;left:0;right:0;bottom:0;z-index:41;background:var(--surface);border-radius:20px 20px 0 0;max-height:88vh;overflow-y:auto;padding:16px 18px calc(20px + env(safe-area-inset-bottom,0px));box-shadow:var(--shadow);}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:41;overflow-x:hidden;background:var(--surface);border-radius:20px 20px 0 0;max-height:88vh;overflow-y:auto;padding:16px 18px calc(20px + env(safe-area-inset-bottom,0px));box-shadow:var(--shadow);}
 .sheetHandle{width:36px;height:4px;border-radius:99px;background:var(--border);margin:0 auto 14px;}
 .sheetHead{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
 .sheetHead h3{margin:0;font-size:17px;font-weight:800;}
@@ -133,6 +133,30 @@ button,input,textarea{font-family:inherit;}
 .modalBtns{display:flex;gap:10px;}
 .modalBtns .btn{width:auto;flex:1;}
 
+/* ---------- поиски iPhone / Шмот ---------- */
+.sectionTitle{font-size:15px;font-weight:800;margin:22px 0 4px;}
+.seg{display:flex;gap:6px;background:var(--surface-2);padding:4px;border-radius:12px;}
+.segBtn{flex:1;border:none;background:transparent;color:var(--text);padding:9px 6px;border-radius:9px;font-size:14px;font-weight:700;cursor:pointer;}
+.segBtn.on{background:var(--accent);color:var(--on-accent);}
+.rowTools,.addRow{display:flex;gap:6px;align-items:center;margin-bottom:8px;}
+.field .rowTools input,.field .addRow input{width:auto;flex:1;min-width:0;border:1px solid var(--border);background:var(--surface-2);color:var(--text);border-radius:var(--radius-s);padding:9px 10px;font-size:14px;outline:none;}
+.addRow{margin-top:8px;}
+.chipBtn{flex:none;border:1px solid var(--border);background:var(--surface);color:var(--accent);border-radius:99px;padding:8px 11px;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap;}
+.itemRow{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);opacity:.62;}
+.itemRow.on{opacity:1;}
+.itemName{flex:1;min-width:0;font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.field .priceIn,.priceIn{width:86px;flex:none;border:1px solid var(--border);background:var(--surface-2);color:var(--text);border-radius:8px;padding:7px 8px;font-size:13.5px;text-align:right;outline:none;}
+.field .selIn,.selIn{flex:1;min-width:0;width:auto;border:1px solid var(--border);background:var(--surface-2);color:var(--text);border-radius:8px;padding:7px 6px;font-size:13.5px;outline:none;}
+.miniBtn{flex:none;width:30px;height:30px;border:none;border-radius:8px;background:var(--surface-2);color:var(--text-secondary);font-size:14px;cursor:pointer;}
+.aliasBox{padding:6px 0 10px;}
+.aliasBox textarea{width:100%;border:1px solid var(--border);background:var(--surface-2);color:var(--text);border-radius:8px;padding:8px;font-size:13px;outline:none;resize:vertical;}
+.sugBox{position:absolute;left:0;right:0;top:66px;z-index:5;background:var(--surface);border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow);overflow:hidden;}
+.sugItem{display:block;width:100%;text-align:left;border:none;background:none;color:var(--text);padding:11px 12px;font-size:14.5px;border-bottom:1px solid var(--border);cursor:pointer;}
+.sugItem:last-child{border-bottom:none;}
+.sugEmpty{padding:11px 12px;font-size:13px;color:var(--text-secondary);}
+.approveRow{display:flex;gap:8px;margin:-6px 0 14px;}
+.approveRow .btn{padding:9px;font-size:13.5px;}
+
 /* ---------- tab bar ---------- */
 .tabbar{position:fixed;left:0;right:0;bottom:0;display:flex;background:var(--surface);border-top:1px solid var(--border);padding:8px 6px calc(6px + env(safe-area-inset-bottom,0px));z-index:30;}
 .tabBtn{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;color:var(--text-secondary);font-size:11px;font-weight:600;padding:6px 2px;cursor:pointer;}
@@ -161,12 +185,24 @@ button,input,textarea{font-family:inherit;}
     <span class="brandName">PSN</span>
   </div>
 
-  <!-- ---------- Подписки ---------- -->
-  <main class="view" id="subsView">
-    <h2 class="viewTitle">Подписки</h2>
-    <p class="muted small viewSub">Здесь — все ваши активные отслеживания объявлений.</p>
+  <!-- ---------- iPhone ---------- -->
+  <main class="view" id="iphoneView">
+    <h2 class="viewTitle">iPhone</h2>
+    <p class="muted small viewSub">Город, модели, память и до какой цены — бот пришлёт только подходящее.</p>
+    <div id="iphoneList"></div>
+    <button class="btn btn-primary" id="addIphoneBtn" type="button">Добавить поиск</button>
+    <h3 class="sectionTitle">Ссылки на поиск <span class="muted small">— продвинутый режим</span></h3>
+    <p class="muted small viewSub">Своя ссылка с Авито, если нужен особый поиск.</p>
     <div id="subsList"></div>
-    <button class="btn btn-primary" id="addSubBtn" type="button">Добавить подписку</button>
+    <button class="btn btn-outline" id="addSubBtn" type="button">Добавить ссылку</button>
+  </main>
+
+  <!-- ---------- Шмот ---------- -->
+  <main class="view" id="clothesView" hidden>
+    <h2 class="viewTitle">Шмот</h2>
+    <p class="muted small viewSub">Город, пол и бренды с потолком цены. Бренды можно включать и выключать на лету.</p>
+    <div id="clothesList"></div>
+    <button class="btn btn-primary" id="addClothesBtn" type="button">Добавить поиск</button>
   </main>
 
   <!-- ---------- Информация ---------- -->
@@ -190,7 +226,8 @@ button,input,textarea{font-family:inherit;}
 
   <nav class="tabbar">
     <button class="tabBtn" data-tab="info"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><circle cx="12" cy="8" r=".6" fill="currentColor" stroke="none"/></svg><span>Информация</span></button>
-    <button class="tabBtn active" data-tab="subs"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h14v17l-7-4-7 4z"/></svg><span>Подписки</span></button>
+    <button class="tabBtn active" data-tab="iphone"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><span>iPhone</span></button>
+    <button class="tabBtn" data-tab="clothes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3l-5 3 2 4 2-1v12h10V9l2 1 2-4-5-3c0 2-1.8 3-4 3S8 5 8 3z"/></svg><span>Шмот</span></button>
     <button class="tabBtn" data-tab="profile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg><span>Профиль</span></button>
     <button class="tabBtn" data-tab="admin" id="adminTabBtn" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.6-3 8.4-7 10-4-1.6-7-5.4-7-10V6l7-3z"/></svg><span>Админ</span></button>
   </nav>
@@ -198,6 +235,9 @@ button,input,textarea{font-family:inherit;}
 
 <div class="backdrop" id="subBackdrop" hidden></div>
 <section class="sheet" id="subSheet" hidden></section>
+
+<div class="backdrop" id="srBackdrop" hidden></div>
+<section class="sheet" id="srSheet" hidden></section>
 
 <div class="backdrop" id="confirmBackdrop" hidden></div>
 <section class="modal" id="confirmModal" hidden></section>
@@ -272,12 +312,13 @@ async function refreshSubs(){
 function renderSubs(){
   const list = loadSubs();
   const wrap = $("#subsList");
+  const addLinkBtn = $("#addSubBtn"); if(addLinkBtn) addLinkBtn.hidden = isPending();
   if(subsLoadFailed && !list.length){
     wrap.innerHTML = `<div class="emptyState">Не удалось загрузить подписки.<br>Ошибка сервера: ${escHtml(subsLoadError||"неизвестна")}</div>`;
     return;
   }
   if(!list.length){
-    wrap.innerHTML = `<div class="emptyState">Пока нет ни одной подписки.<br>Нажмите «Добавить подписку», чтобы начать отслеживать объявления.</div>`;
+    wrap.innerHTML = `<div class="emptyState">Ссылок пока нет. Обычно хватает поисков выше — ссылка нужна только для особых случаев.</div>`;
     return;
   }
   wrap.innerHTML = list.map(s=>`
@@ -481,8 +522,9 @@ function renderProfile(){
       </div>
     </div>
     <div class="idRow"><span class="muted">Telegram ID</span><span>${u.id}</span></div>
-    <div class="idRow"><span class="muted">Подписок</span><span>${loadSubs().length}</span></div>
-    <div class="idRow"><span class="muted">Активных</span><span>${loadSubs().filter(s=>s.active).length}</span></div>
+    <div class="idRow"><span class="muted">Поисков iPhone / Шмот</span><span>${searchesCache.filter(x=>x.kind==="iphone").length} / ${searchesCache.filter(x=>x.kind==="clothes").length}</span></div>
+    <div class="idRow"><span class="muted">Ссылок</span><span>${loadSubs().length}</span></div>
+    <div class="idRow"><span class="muted">Доступ</span><span>${meState && meState.approved===false ? "ждёт одобрения" : "открыт"}</span></div>
     ${meState ? `
     <div class="paramsBox" style="margin-top:16px;">
       <div class="paramRow">
@@ -527,6 +569,7 @@ async function loadMe(){
   if(adminBtn) adminBtn.hidden = !(meState && meState.isAdmin);
   if(!$("#profileView").hidden) renderProfile();
   if(!$("#adminView").hidden) renderAdmin();
+  renderSearchList("iphone"); renderSearchList("clothes"); renderSubs();
 }
 
 /* ---------- вкладка «Админ» (видна только администратору) ---------- */
@@ -552,32 +595,321 @@ async function renderAdmin(){
   wrap.innerHTML = users.map(u=>{
     const name = u.firstName || (u.username ? "@"+u.username : "Без имени");
     const subs = u.subscriptions || [];
-    const subsHtml = subs.length ? subs.map(s=>`
+    const srch = u.searches || [];
+    const srchHtml = srch.map(s=>`
+      <div class="idRow"><span>${s.kind==="iphone"?"📱":"👕"} ${escHtml(s.name||s.cityName)} · ${escHtml(s.cityName)}${s.active?" · работает":" · остановлен"}</span>
+        <span class="muted">${((s.kind==="iphone"?s.config.models:s.config.brands)||[]).filter(x=>x.enabled).length}</span></div>`).join("");
+    const approveHtml = u.isAdmin ? "" : `<div class="approveRow">${u.approved
+      ? `<button class="btn btn-secondary" data-approve="${u.telegramId}" data-val="0" type="button">Закрыть доступ</button>`
+      : `<button class="btn btn-primary" data-approve="${u.telegramId}" data-val="1" type="button">✅ Одобрить доступ</button>`}</div>`;
+    const subsHtml = srchHtml + (subs.length ? subs.map(s=>`
       <div class="idRow"><span>${escHtml(s.name||"Без названия")}${s.active?" · работает":" · остановлена"}</span></div>
       <p class="fieldHint" style="margin:-4px 0 8px;word-break:break-all;">${escHtml(s.url||"")}</p>
-    `).join("") : `<p class="muted small" style="margin:4px 0 8px;">Подписок нет</p>`;
+    `).join("") : (srch.length ? "" : `<p class="muted small" style="margin:4px 0 8px;">Поисков и ссылок нет</p>`));
     return `
       <div class="profileCard" style="align-items:flex-start;">
         <div class="profileAvatar">${(name||"?").trim().charAt(0).toUpperCase()}</div>
         <div style="flex:1;min-width:0;">
           <div class="profileName">${escHtml(name)}${u.isAdmin?" · админ":""}</div>
           <div class="profileMeta">Telegram ID ${u.telegramId}${u.username?" · @"+escHtml(u.username):""}</div>
-          <div class="profileMeta">Доставка: ${u.deliveryTarget==="head"?"этот бот":"бот-отправитель"} · подписок: ${subs.length}</div>
+          <div class="profileMeta">Доставка: ${u.deliveryTarget==="head"?"этот бот":"бот-отправитель"} · поисков: ${srch.length} · ссылок: ${subs.length}</div>
+          <div class="profileMeta" style="font-weight:700;color:${u.approved?"var(--success)":"var(--warning)"};">${u.approved?"Доступ открыт":"⏳ Ждёт одобрения"}</div>
         </div>
       </div>
+      ${approveHtml}
       <div class="paramsBox" style="margin:-4px 0 16px;">${subsHtml}</div>
     `;
   }).join("");
+  wrap.querySelectorAll("[data-approve]").forEach(b=> b.addEventListener("click", async ()=>{
+    b.disabled = true;
+    try{ await apiJson(`/api/admin/users/${b.dataset.approve}/approve`,"POST",{ approved: b.dataset.val==="1" }); haptic("success");
+         showToast(b.dataset.val==="1" ? "Доступ открыт — человеку придёт сообщение" : "Доступ закрыт"); renderAdmin(); }
+    catch(e){ showToast("Не удалось: "+e.message); b.disabled = false; }
+  }));
 }
+
+/* ====================== поиски iPhone / Шмот ======================
+   Город + фильтры (модели/бренды, цены, сленг). Все поиски одного типа парсер
+   обслуживает одной общей ссылкой «по всей России», а нужное каждому отбирает сам.
+   Настройки сохраняются автоматически (через ~1 секунду после изменения). */
+const CITIES = [["Москва",637640],["Санкт-Петербург",653240],["Новосибирск",641780],["Екатеринбург",654070],["Казань",650400],["Нижний Новгород",640860],["Челябинск",661420],["Красноярск",635320],["Самара",653040],["Уфа",646600],["Ростов-на-Дону",652000],["Омск",642320],["Краснодар",633540],["Воронеж",625810],["Пермь",644200],["Волгоград",624840],["Саратов",653241],["Тюмень",659020],["Тольятти",653140],["Ижевск",659300],["Барнаул",621630],["Ульяновск",659880],["Иркутск",628970],["Хабаровск",660250],["Ярославль",662810],["Владивосток",644560],["Махачкала",647420],["Томск",657600],["Оренбург",642790],["Кемерово",631270],["Новокузнецк",631430],["Рязань",652430],["Набережные Челны",650510],["Астрахань",623130],["Пенза",643560],["Липецк",637440],["Чебоксары",662210],["Балашиха",637770],["Калининград",630090],["Тула",658080],["Курск",636160],["Севастополь",621585],["Ставрополь",656350],["Улан-Удэ",653271],["Сочи",634450],["Тверь",656901],["Магнитогорск",661100],["Иваново",628500],["Брянск",623880],["Белгород",623430],["Сургут",660630],["Владимир",624360],["Чита",661950],["Архангельск",622660],["Нижний Тагил",654410],["Симферополь",621565],["Калуга",630410],["Смоленск",655100],["Курган",635860],["Череповец",625650],["Орёл",643190],["Вологда",625390],["Саранск",649210],["Якутск",649810],["Владикавказ",649870],["Подольск",639180],["Мурманск",640160],["Тамбов",656830],["Грозный",653391],["Стерлитамак",646520],["Петрозаводск",648220],["Кострома",632490],["Нижневартовск",660480],["Новороссийск",634030],["Йошкар-Ола",648760],["Химки",639740],["Таганрог",652100],["Комсомольск-на-Амуре",660060],["Сыктывкар",648630],["Нальчик",629770],["Шахты",652200],["Дзержинск",640650],["Братск",628890],["Орск",642800],["Ангарск",628810],["Энгельс",653265],["Великий Новгород",641270],["Королёв",638520],["Псков",645450],["Бийск",621670],["Прокопьевск",631500],["Южно-Сахалинск",653690],["Балаково",653245],["Рыбинск",662760],["Армавир",632760],["Северодвинск",623010],["Петропавловск-Камчатский",630730],["Абакан",650910],["Норильск",635430],["Сызрань",653120],["Волгодонск",651280],["Каменск-Уральский",654170],["Уссурийск",645160],["Новочеркасск",651830],["Златоуст",660930],["Электросталь",639940],["Альметьевск",650210],["Мытищи",638920],["Люберцы",638790],["Керчь",621560],["Салават",646450],["Миасс",661130],["Копейск",661010],["Пятигорск",656200],["Одинцово",639040],["Коломна",638480],["Кисловодск",655720],["Майкоп",645660],["Хасавюрт",647940],["Новомосковск",657900],["Серпухов",639470],["Новочебоксарск",662150],["Нефтеюганск",660470],["Димитровград",659610],["Дербент",647030],["Камышин",624970],["Невинномысск",655950],["Муром",624600],["Батайск",651180],["Новый Уренгой",662420],["Сергиев Посад",639440],["Ноябрьск",662430],["Щёлково",639910],["Кызыл",650740],["Обнинск",630530],["Жуковский",638240],["Евпатория",621581],["Элиста",653341],["Арзамас",640330],["Ачинск",634960],["Ханты-Мансийск",660680],["Магадан",637540]];
+const BRAND_DICT = [{"name":"Stone Island","aliases":["stone island","stoneisland","стон айленд","стоун айленд","стоник","стон"],"price":8000},{"name":"C.P. Company","aliases":["cp company","c.p. company","cpcompany","c.p.company","сипи компани","сипи"],"price":6000},{"name":"Napapijri","aliases":["napapijri","напапиджри","напапири","напа"],"price":5000},{"name":"Levi's","aliases":["levis","levi's","levi strauss","левис","левайс","ливайс"],"price":2500},{"name":"Diesel","aliases":["diesel","дизель"],"price":3000},{"name":"Dolce & Gabbana","aliases":["dolce gabbana","dolce & gabbana","dolce&gabbana","d&g","дольче габбана","дольче","дг"],"price":7000},{"name":"Ralph Lauren","aliases":["ralph lauren","polo ralph","ральф лорен","ральф"],"price":2500},{"name":"Lacoste","aliases":["lacoste","лакост","лакоста"],"price":2500},{"name":"Tommy Hilfiger","aliases":["tommy hilfiger","tommy","томми хилфигер","томми"],"price":2000},{"name":"Calvin Klein","aliases":["calvin klein","кельвин кляйн","кальвин кляйн","кельвин"],"price":2000},{"name":"Hugo Boss","aliases":["hugo boss","хуго босс","хьюго босс"],"price":3000},{"name":"Burberry","aliases":["burberry","барберри","бербери"],"price":8000},{"name":"Moncler","aliases":["moncler","монклер"],"price":20000},{"name":"The North Face","aliases":["the north face","north face","tnf","норт фейс"],"price":5000},{"name":"Carhartt","aliases":["carhartt","кархарт","кархартт"],"price":3000},{"name":"Stüssy","aliases":["stussy","stüssy","стусси","стасси"],"price":3500},{"name":"Supreme","aliases":["supreme","суприм"],"price":5000},{"name":"Arc'teryx","aliases":["arcteryx","arc'teryx","arc teryx","артерикс","арктерикс"],"price":10000},{"name":"Barbour","aliases":["barbour","барбор","барбур"],"price":6000},{"name":"Fred Perry","aliases":["fred perry","фред перри"],"price":2500},{"name":"Armani","aliases":["armani","emporio armani","ea7","armani exchange","армани"],"price":3000},{"name":"Moschino","aliases":["moschino","москино"],"price":4000},{"name":"Versace","aliases":["versace","версаче"],"price":6000},{"name":"Dsquared2","aliases":["dsquared2","dsquared","дискваред"],"price":5000},{"name":"Kenzo","aliases":["kenzo","кензо"],"price":4000},{"name":"Off-White","aliases":["off-white","off white","offwhite","офф вайт","оф вайт"],"price":7000},{"name":"Palm Angels","aliases":["palm angels","палм энджелс","палм ангелс"],"price":6000},{"name":"Gucci","aliases":["gucci","гучи","гуччи"],"price":12000},{"name":"Prada","aliases":["prada","прада"],"price":10000},{"name":"Balenciaga","aliases":["balenciaga","баленсиага"],"price":12000},{"name":"G-Star","aliases":["g-star","g star","gstar","джи стар","гстар"],"price":3000},{"name":"John Richmond","aliases":["john richmond","richmond","ричмонд"],"price":4000},{"name":"Bikkembergs","aliases":["bikkembergs","бикембергс","бикем"],"price":3000},{"name":"Ed Hardy","aliases":["ed hardy","эд харди"],"price":3000}];
+
+const IPHONE_MODELS = ["11","11 Pro","11 Pro Max","12 mini","12","12 Pro","12 Pro Max","13 mini","13","13 Pro","13 Pro Max","14","14 Plus","14 Pro","14 Pro Max","15","15 Plus","15 Pro","15 Pro Max","16e","16","16 Plus","16 Pro","16 Pro Max","17","Air","17 Pro","17 Pro Max"];
+const IPHONE_MEMORY = [0,64,128,256,512,1024]; /* 0 = любая */
+const GENDERS = [["m","Муж"],["f","Жен"],["mf","Оба"]];
+
+let searchesCache = [];
+let searchesLoaded = false;
+let searchesError = "";
+
+function normAlias(s){ return String(s||"").toLowerCase().replace(/ё/g,"е").replace(/[’'`´]/g,"").replace(/[-_/]+/g," ").replace(/\s+/g," ").trim(); }
+/* латиница -> примерное русское написание (Acne Studios -> акне студиос) */
+function latToRu(s){
+  let t = normAlias(s);
+  const dig=[["sch","щ"],["sh","ш"],["ch","ч"],["zh","ж"],["kh","х"],["ts","ц"],["ya","я"],["yu","ю"],["yo","е"],["ee","и"],["oo","у"],["ph","ф"],["th","т"],["ck","к"],["qu","кв"],["ou","у"]];
+  for(const [a,b] of dig) t=t.split(a).join(b);
+  const m={a:"а",b:"б",c:"к",d:"д",e:"е",f:"ф",g:"г",h:"х",i:"и",j:"дж",k:"к",l:"л",m:"м",n:"н",o:"о",p:"п",q:"к",r:"р",s:"с",t:"т",u:"у",v:"в",w:"в",x:"кс",y:"и",z:"з"};
+  return t.replace(/[a-z]/g,c=>m[c]||c);
+}
+function autoAliases(name){
+  const base = normAlias(name);
+  const dict = BRAND_DICT.find(b=> normAlias(b.name)===base || b.aliases.some(a=>normAlias(a)===base));
+  const set = new Set(dict ? dict.aliases.map(normAlias) : []);
+  set.add(base);
+  if(base.includes(" ")) set.add(base.replace(/ /g,""));
+  if(/[a-z]/.test(base)) set.add(latToRu(base));
+  return Array.from(set).filter(Boolean);
+}
+function defaultBrands(){ return BRAND_DICT.map(b=>({ name:b.name, aliases:b.aliases.map(normAlias), maxPrice:b.price, enabled:false })); }
+function fmtPrice(n){ return n ? Number(n).toLocaleString("ru-RU")+" ₽" : "любая"; }
+
+async function refreshSearches(){
+  try{
+    const data = await apiJson("/api/searches","GET");
+    searchesCache = data.searches || [];
+    searchesLoaded = true; searchesError = "";
+  }catch(e){ searchesError = (e && e.message) || "ошибка"; }
+  renderSearchList("iphone"); renderSearchList("clothes");
+}
+function pendingHtml(){
+  return `<div class="emptyState">⏳ Заявка на доступ отправлена администратору.<br>Как только её одобрят, здесь можно будет добавить поиск — придёт сообщение в боте.</div>`;
+}
+function isPending(){ return meState && meState.approved === false; }
+
+function renderSearchList(kind){
+  const wrap = $(kind==="iphone" ? "#iphoneList" : "#clothesList");
+  const addBtn = $(kind==="iphone" ? "#addIphoneBtn" : "#addClothesBtn");
+  if(!wrap) return;
+  if(isPending()){ wrap.innerHTML = pendingHtml(); if(addBtn) addBtn.hidden = true; return; }
+  if(addBtn) addBtn.hidden = false;
+  const list = searchesCache.filter(s=>s.kind===kind);
+  if(!searchesLoaded && searchesError){ wrap.innerHTML = `<div class="emptyState">Не удалось загрузить поиски: ${escHtml(searchesError)}</div>`; return; }
+  if(!list.length){
+    wrap.innerHTML = `<div class="emptyState">${kind==="iphone"
+      ? "Пока нет поисков. Выберите город, модели, память и до какой цены — бот будет присылать только подходящее."
+      : "Пока нет поисков. Выберите город, пол и бренды с потолком цены — бот будет присылать только подходящее."}</div>`;
+    return;
+  }
+  wrap.innerHTML = list.map(s=>{
+    const items = kind==="iphone" ? (s.config.models||[]) : (s.config.brands||[]);
+    const on = items.filter(x=>x.enabled).length;
+    const what = kind==="iphone" ? `моделей: ${on}` : `брендов: ${on}`;
+    const g = kind==="clothes" ? " · " + (GENDERS.find(x=>x[0]===s.gender)||["","Оба"])[1] : "";
+    return `<div class="subCard ${s.active?"active":""}" data-search="${s.id}">
+      <span class="dot"></span>
+      <div class="si"><b>${escHtml(s.name||s.cityName)}</b>
+        <span>${escHtml(s.cityName)}${g} · ${what} · ${s.active?"работает":"остановлен"}</span></div>
+      <svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+    </div>`;
+  }).join("");
+  wrap.querySelectorAll("[data-search]").forEach(el=> el.addEventListener("click", ()=> openSearchSheet(kind, el.dataset.search)));
+}
+
+/* ---------- редактор поиска ---------- */
+let sEdit = null;      /* {id|null, kind, name, locationId, cityName, gender, config, params, active} */
+let sSaveTimer = null;
+function openSearchSheet(kind, id){
+  const ex = id ? searchesCache.find(s=>s.id===id) : null;
+  sEdit = ex ? JSON.parse(JSON.stringify(ex)) : {
+    id:null, kind, name:"", locationId:637640, cityName:"Москва", gender:"mf",
+    config: kind==="clothes" ? { brands: defaultBrands() } : { models: [] },
+    params:{ photo:false, desc:true, seller:true }, active:true,
+  };
+  if(kind==="clothes" && !Array.isArray(sEdit.config.brands)) sEdit.config.brands = [];
+  if(kind==="iphone" && !Array.isArray(sEdit.config.models)) sEdit.config.models = [];
+  $("#srBackdrop").hidden = false; $("#srSheet").hidden = false;
+  renderSearchSheet();
+}
+function closeSearchSheet(){
+  if(sSaveTimer){ clearTimeout(sSaveTimer); sSaveTimer=null; if(sEdit && sEdit.id) saveSearchNow(); }
+  $("#srBackdrop").hidden = true; $("#srSheet").hidden = true; sEdit = null;
+  refreshSearches();
+}
+function searchBody(){
+  return { kind:sEdit.kind, name:sEdit.name, locationId:sEdit.locationId, cityName:sEdit.cityName,
+           gender:sEdit.gender, config:sEdit.config, params:sEdit.params };
+}
+function scheduleSave(){
+  if(!sEdit || !sEdit.id) return;
+  setSaveState("…");
+  if(sSaveTimer) clearTimeout(sSaveTimer);
+  sSaveTimer = setTimeout(saveSearchNow, 900);
+}
+async function saveSearchNow(){
+  sSaveTimer = null;
+  if(!sEdit || !sEdit.id) return;
+  try{ await apiJson(`/api/searches/${encodeURIComponent(sEdit.id)}`, "PUT", searchBody()); setSaveState("Сохранено ✓"); }
+  catch(e){ setSaveState("Не сохранилось: " + e.message); }
+}
+function setSaveState(t){ const el=$("#srSaveState"); if(el) el.textContent = t; }
+
+function citySuggestions(q){
+  const n = normAlias(q);
+  if(!n) return [];
+  return CITIES.filter(c=> normAlias(c[0]).startsWith(n)).concat(CITIES.filter(c=> !normAlias(c[0]).startsWith(n) && normAlias(c[0]).includes(n))).slice(0,8);
+}
+
+function renderSearchSheet(){
+  const s = sEdit, isNew = !s.id, kind = s.kind;
+  const items = kind==="clothes" ? s.config.brands : s.config.models;
+  const enabledCount = items.filter(x=>x.enabled).length;
+  const genderHtml = kind==="clothes" ? `
+    <div class="field"><label>Пол</label>
+      <div class="seg">${GENDERS.map(([v,t])=>`<button type="button" class="segBtn ${s.gender===v?"on":""}" data-gender="${v}">${t}</button>`).join("")}</div>
+    </div>` : "";
+  const itemsHtml = kind==="clothes" ? `
+    <div class="field"><label id="itemsCount">Бренды · включено ${enabledCount} из ${items.length}</label>
+      <div class="rowTools">
+        <input id="brandFilter" type="search" placeholder="Найти бренд…" autocomplete="off">
+        <button type="button" class="chipBtn" id="allOn">Все вкл</button>
+        <button type="button" class="chipBtn" id="allOff">Все выкл</button>
+      </div>
+      <div id="brandRows"></div>
+      <div class="addRow">
+        <input id="newBrandName" type="text" placeholder="Новый бренд, например Acne Studios" autocomplete="off">
+        <button type="button" class="chipBtn" id="addBrand">+ Добавить</button>
+      </div>
+      <p class="fieldHint">Бренд ищется <b>только в названии</b> объявления. Сленг и русское написание подставляются сами — их можно поправить кнопкой ✎.</p>
+    </div>` : `
+    <div class="field"><label id="itemsCount">Модели · включено ${enabledCount} из ${items.length}</label>
+      <div id="modelRows"></div>
+      <button type="button" class="btn btn-outline" id="addModel" style="margin-top:6px;">+ Добавить модель</button>
+      <p class="fieldHint">Модель и память определяются по названию объявления. «Любая» память — подойдёт любой объём.</p>
+    </div>`;
+  $("#srSheet").innerHTML = `
+    <div class="sheetHandle"></div>
+    <div class="sheetHead"><h3>${isNew ? (kind==="clothes"?"Новый поиск шмота":"Новый поиск iPhone") : escHtml(s.name||s.cityName)}</h3>
+      <button class="iconBtn" id="srClose" type="button" aria-label="Закрыть">✕</button></div>
+    ${isNew ? "" : `<div class="paramRow" style="margin-bottom:10px;"><span><b>${s.active?"Поиск работает":"Поиск остановлен"}</b></span>
+      <label class="switchCtl"><input type="checkbox" id="srActive" ${s.active?"checked":""}><span class="track"></span><span class="thumb"></span></label></div>
+      <p class="fieldHint" id="srSaveState" style="margin:-4px 0 12px;">Изменения сохраняются сами</p>`}
+    <div class="field" style="position:relative;"><label>Город</label>
+      <input id="cityInput" type="text" value="${escHtml(s.cityName)}" placeholder="Начните вводить город…" autocomplete="off">
+      <div id="citySug" class="sugBox" hidden></div>
+      <p class="fieldHint">Объявления приходят только из выбранного города.</p>
+    </div>
+    ${genderHtml}
+    <div class="field"><label>Название (необязательно)</label>
+      <input id="srName" type="text" maxlength="60" value="${escHtml(s.name)}" placeholder="${kind==="clothes"?"Например: Мск муж":"Например: Мск 15 Pro"}"></div>
+    ${itemsHtml}
+    <div class="paramsBox">
+      ${[["photo","Присылать фото"],["desc","Присылать описание"],["seller","Показывать продавца"]].map(([k,t])=>`
+      <div class="paramRow"><span>${t}</span><label class="switchCtl"><input type="checkbox" data-param="${k}" ${s.params[k]?"checked":""}><span class="track"></span><span class="thumb"></span></label></div>`).join("")}
+    </div>
+    ${isNew ? `<button class="btn btn-primary" id="srCreate" type="button">Создать и запустить</button>`
+            : `<button class="btn-danger-text" id="srDelete" type="button">Удалить поиск</button>`}
+  `;
+  $("#srClose").addEventListener("click", closeSearchSheet);
+  /* город */
+  const ci = $("#cityInput"), sug = $("#citySug");
+  ci.addEventListener("input", ()=>{
+    const list = citySuggestions(ci.value);
+    sug.innerHTML = list.map(c=>`<button type="button" class="sugItem" data-loc="${c[1]}">${escHtml(c[0])}</button>`).join("") || `<div class="sugEmpty">Нет такого города в списке</div>`;
+    sug.hidden = !ci.value.trim();
+    sug.querySelectorAll("[data-loc]").forEach(b=> b.addEventListener("click", ()=>{
+      s.locationId = Number(b.dataset.loc); s.cityName = b.textContent; ci.value = s.cityName; sug.hidden = true; haptic("selection"); scheduleSave();
+    }));
+  });
+  ci.addEventListener("blur", ()=> setTimeout(()=>{ sug.hidden = true; ci.value = s.cityName; }, 200));
+  /* пол */
+  $all("[data-gender]").forEach(b=> b.addEventListener("click", ()=>{ s.gender = b.dataset.gender; haptic("selection"); renderSearchSheet(); scheduleSave(); }));
+  $("#srName").addEventListener("input", e=>{ s.name = e.target.value; scheduleSave(); });
+  $all("[data-param]").forEach(c=> c.addEventListener("change", ()=>{ s.params[c.dataset.param] = c.checked; scheduleSave(); }));
+  const act = $("#srActive");
+  if(act) act.addEventListener("change", async ()=>{
+    try{ const r = await apiJson(`/api/searches/${encodeURIComponent(s.id)}/toggle`,"PATCH"); s.active = r.active; haptic("success");
+         showToast(r.active?"Поиск запущен":"Поиск остановлен"); renderSearchSheet(); }
+    catch(e){ act.checked = !act.checked; showToast("Не удалось: "+e.message); }
+  });
+  if(kind==="clothes") renderBrandRows(); else renderModelRows();
+  const create = $("#srCreate");
+  if(create) create.addEventListener("click", async ()=>{
+    if(!s.locationId){ showToast("Выберите город"); return; }
+    if(!items.some(x=>x.enabled)){ showToast(kind==="clothes"?"Включите хотя бы один бренд":"Добавьте хотя бы одну модель"); return; }
+    create.disabled = true;
+    try{ await apiJson("/api/searches","POST", searchBody()); haptic("success"); showToast("Поиск создан и запущен"); closeSearchSheet(); }
+    catch(e){ showToast("Не удалось создать: "+e.message); create.disabled = false; }
+  });
+  const del = $("#srDelete");
+  if(del) del.addEventListener("click", async ()=>{
+    if(!window.confirm("Удалить этот поиск?")) return;
+    try{ await apiJson(`/api/searches/${encodeURIComponent(s.id)}`,"DELETE"); if(sSaveTimer){clearTimeout(sSaveTimer);sSaveTimer=null;} sEdit.id=null; haptic("warning"); showToast("Поиск удалён"); closeSearchSheet(); }
+    catch(e){ showToast("Не удалось удалить: "+e.message); }
+  });
+}
+
+function renderBrandRows(){
+  const s = sEdit, wrap = $("#brandRows"), f = normAlias(($("#brandFilter")||{}).value||"");
+  const rows = s.config.brands.map((b,i)=>({b,i})).filter(({b})=> !f || normAlias(b.name).includes(f) || (b.aliases||[]).some(a=>a.includes(f)));
+  wrap.innerHTML = rows.map(({b,i})=>`
+    <div class="itemRow ${b.enabled?"on":""}">
+      <label class="switchCtl"><input type="checkbox" data-bon="${i}" ${b.enabled?"checked":""}><span class="track"></span><span class="thumb"></span></label>
+      <span class="itemName">${escHtml(b.name)}</span>
+      <input class="priceIn" type="number" inputmode="numeric" min="0" step="500" data-bprice="${i}" value="${b.maxPrice||""}" placeholder="любая">
+      <button type="button" class="miniBtn" data-balias="${i}" title="Варианты написания">✎</button>
+      <button type="button" class="miniBtn" data-bdel="${i}" title="Удалить">✕</button>
+    </div>
+    <div class="aliasBox" id="alias${i}" hidden>
+      <textarea data-baliases="${i}" rows="2">${escHtml((b.aliases||[]).join(", "))}</textarea>
+      <p class="fieldHint">Как ещё пишут этот бренд — через запятую. Ищется в названии объявления.</p>
+    </div>`).join("") || `<p class="muted small">Ничего не найдено</p>`;
+  wrap.querySelectorAll("[data-bon]").forEach(c=> c.addEventListener("change", ()=>{ s.config.brands[c.dataset.bon].enabled = c.checked; c.closest(".itemRow").classList.toggle("on", c.checked); updateItemsCount(); scheduleSave(); }));
+  wrap.querySelectorAll("[data-bprice]").forEach(c=> c.addEventListener("input", ()=>{ const v=parseInt(c.value,10); s.config.brands[c.dataset.bprice].maxPrice = v>0?v:null; scheduleSave(); }));
+  wrap.querySelectorAll("[data-balias]").forEach(btn=> btn.addEventListener("click", ()=>{ const box=$("#alias"+btn.dataset.balias); box.hidden=!box.hidden; }));
+  wrap.querySelectorAll("[data-baliases]").forEach(t=> t.addEventListener("input", ()=>{ s.config.brands[t.dataset.baliases].aliases = t.value.split(",").map(normAlias).filter(Boolean); scheduleSave(); }));
+  wrap.querySelectorAll("[data-bdel]").forEach(btn=> btn.addEventListener("click", ()=>{ s.config.brands.splice(Number(btn.dataset.bdel),1); renderSearchSheet(); scheduleSave(); }));
+  const flt = $("#brandFilter"); if(flt && !flt.dataset.bound){ flt.dataset.bound="1"; flt.addEventListener("input", renderBrandRows); }
+  const on = $("#allOn"); if(on && !on.dataset.bound){ on.dataset.bound="1"; on.addEventListener("click", ()=>{ s.config.brands.forEach(b=>b.enabled=true); renderSearchSheet(); scheduleSave(); }); }
+  const off = $("#allOff"); if(off && !off.dataset.bound){ off.dataset.bound="1"; off.addEventListener("click", ()=>{ s.config.brands.forEach(b=>b.enabled=false); renderSearchSheet(); scheduleSave(); }); }
+  const add = $("#addBrand"); if(add && !add.dataset.bound){ add.dataset.bound="1"; add.addEventListener("click", ()=>{
+    const inp = $("#newBrandName"), name = inp.value.trim();
+    if(!name) return;
+    if(s.config.brands.some(b=>normAlias(b.name)===normAlias(name))){ showToast("Такой бренд уже есть"); return; }
+    const dict = BRAND_DICT.find(b=> normAlias(b.name)===normAlias(name) || b.aliases.some(a=>normAlias(a)===normAlias(name)));
+    s.config.brands.unshift({ name: dict?dict.name:name, aliases: autoAliases(name), maxPrice: dict?dict.price:null, enabled:true });
+    haptic("success"); renderSearchSheet(); scheduleSave();
+  }); }
+}
+function updateItemsCount(){
+  const el = $("#itemsCount"); if(!el || !sEdit) return;
+  const items = sEdit.kind==="clothes" ? sEdit.config.brands : sEdit.config.models;
+  el.textContent = (sEdit.kind==="clothes"?"Бренды":"Модели") + ` · включено ${items.filter(x=>x.enabled).length} из ${items.length}`;
+}
+function renderModelRows(){
+  const s = sEdit, wrap = $("#modelRows");
+  wrap.innerHTML = s.config.models.map((m,i)=>`
+    <div class="itemRow ${m.enabled?"on":""}">
+      <label class="switchCtl"><input type="checkbox" data-mon="${i}" ${m.enabled?"checked":""}><span class="track"></span><span class="thumb"></span></label>
+      <select class="selIn" data-mmodel="${i}">${IPHONE_MODELS.map(x=>`<option value="${x}" ${x===m.model?"selected":""}>${x}</option>`).join("")}</select>
+      <select class="selIn" data-mmem="${i}">${IPHONE_MEMORY.map(x=>`<option value="${x}" ${Number(m.memory||0)===x?"selected":""}>${x===0?"любая":(x>=1024?"1 ТБ":x+" ГБ")}</option>`).join("")}</select>
+      <input class="priceIn" type="number" inputmode="numeric" min="0" step="1000" data-mprice="${i}" value="${m.maxPrice||""}" placeholder="любая">
+      <button type="button" class="miniBtn" data-mdel="${i}" title="Удалить">✕</button>
+    </div>`).join("") || `<p class="muted small">Добавьте модели, которые ищете.</p>`;
+  wrap.querySelectorAll("[data-mon]").forEach(c=> c.addEventListener("change", ()=>{ s.config.models[c.dataset.mon].enabled=c.checked; c.closest(".itemRow").classList.toggle("on",c.checked); updateItemsCount(); scheduleSave(); }));
+  wrap.querySelectorAll("[data-mmodel]").forEach(c=> c.addEventListener("change", ()=>{ s.config.models[c.dataset.mmodel].model=c.value; scheduleSave(); }));
+  wrap.querySelectorAll("[data-mmem]").forEach(c=> c.addEventListener("change", ()=>{ s.config.models[c.dataset.mmem].memory=Number(c.value)||null; scheduleSave(); }));
+  wrap.querySelectorAll("[data-mprice]").forEach(c=> c.addEventListener("input", ()=>{ const v=parseInt(c.value,10); s.config.models[c.dataset.mprice].maxPrice=v>0?v:null; scheduleSave(); }));
+  wrap.querySelectorAll("[data-mdel]").forEach(b=> b.addEventListener("click", ()=>{ s.config.models.splice(Number(b.dataset.mdel),1); renderSearchSheet(); scheduleSave(); }));
+  const add = $("#addModel");
+  if(add) add.addEventListener("click", ()=>{ s.config.models.push({ model:"15 Pro", memory:null, maxPrice:null, enabled:true }); haptic("selection"); renderSearchSheet(); scheduleSave(); });
+}
+
+$("#addIphoneBtn").addEventListener("click", ()=> openSearchSheet("iphone", null));
+$("#addClothesBtn").addEventListener("click", ()=> openSearchSheet("clothes", null));
+$("#srBackdrop").addEventListener("click", closeSearchSheet);
+
 
 /* ---------- переключение вкладок ---------- */
 function switchTab(name){
   $all("[data-tab]").forEach(b=> b.classList.toggle("active", b.dataset.tab===name));
-  $("#subsView").hidden = name!=="subs";
+  $("#iphoneView").hidden = name!=="iphone";
+  $("#clothesView").hidden = name!=="clothes";
   $("#infoView").hidden = name!=="info";
   $("#profileView").hidden = name!=="profile";
   $("#adminView").hidden = name!=="admin";
-  if(name==="subs") renderSubs();
+  if(name==="iphone"){ renderSearchList("iphone"); renderSubs(); }
+  if(name==="clothes") renderSearchList("clothes");
   if(name==="info") renderInfo();
   if(name==="profile") renderProfile();
   if(name==="admin") renderAdmin();
@@ -644,6 +976,7 @@ function initTelegram(){
 initTelegram();
 renderSubs(); /* мгновенно показываем закэшированный список, пока грузится сервер */
 refreshSubs();
+refreshSearches();
 loadMe(); /* тянет профиль (в т.ч. isAdmin) — показывает вкладку «Админ», если нужно */
 })();
 </script>

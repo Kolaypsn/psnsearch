@@ -147,6 +147,10 @@ button,input,textarea{font-family:inherit;}
 .itemName{flex:1;min-width:0;font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .field .priceIn,.priceIn{width:86px;flex:none;border:1px solid var(--border);background:var(--surface-2);color:var(--text);border-radius:8px;padding:7px 8px;font-size:13.5px;text-align:right;outline:none;}
 .field .selIn,.selIn{flex:1;min-width:0;width:auto;border:1px solid var(--border);background:var(--surface-2);color:var(--text);border-radius:8px;padding:7px 6px;font-size:13.5px;outline:none;}
+.field .memIn,.memIn{width:70px;flex:none;border:1px solid var(--border);background:var(--surface-2);color:var(--text);border-radius:8px;padding:7px 4px;font-size:13px;outline:none;}
+.modelName{white-space:normal;line-height:1.15;font-size:13.5px;}
+#modelRows .priceIn{width:72px;}
+#modelRows .itemRow{gap:6px;}
 .miniBtn{flex:none;width:30px;height:30px;border:none;border-radius:8px;background:var(--surface-2);color:var(--text-secondary);font-size:14px;cursor:pointer;}
 .aliasBox{padding:6px 0 10px;}
 .aliasBox textarea{width:100%;border:1px solid var(--border);background:var(--surface-2);color:var(--text);border-radius:8px;padding:8px;font-size:13px;outline:none;resize:vertical;}
@@ -226,7 +230,7 @@ button,input,textarea{font-family:inherit;}
 
   <nav class="tabbar">
     <button class="tabBtn" data-tab="info"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><circle cx="12" cy="8" r=".6" fill="currentColor" stroke="none"/></svg><span>Информация</span></button>
-    <button class="tabBtn active" data-tab="iphone"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><span>iPhone</span></button>
+    <button class="tabBtn active" data-tab="iphone"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2" width="12" height="20" rx="3"/><path d="M10.5 4.6h3"/><path d="M11 19h2"/></svg><span>iPhone</span></button>
     <button class="tabBtn" data-tab="clothes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3l-5 3 2 4 2-1v12h10V9l2 1 2-4-5-3c0 2-1.8 3-4 3S8 5 8 3z"/></svg><span>Шмот</span></button>
     <button class="tabBtn" data-tab="profile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg><span>Профиль</span></button>
     <button class="tabBtn" data-tab="admin" id="adminTabBtn" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.6-3 8.4-7 10-4-1.6-7-5.4-7-10V6l7-3z"/></svg><span>Админ</span></button>
@@ -661,6 +665,7 @@ function autoAliases(name){
   if(/[a-z]/.test(base)) set.add(latToRu(base));
   return Array.from(set).filter(Boolean);
 }
+function defaultModels(){ return IPHONE_MODELS.slice().reverse().map(m=>({ model:m, memory:null, maxPrice:null, enabled:false })); }
 function defaultBrands(){ return BRAND_DICT.map(b=>({ name:b.name, aliases:b.aliases.map(normAlias), maxPrice:b.price, enabled:false })); }
 function fmtPrice(n){ return n ? Number(n).toLocaleString("ru-RU")+" ₽" : "любая"; }
 
@@ -713,7 +718,7 @@ function openSearchSheet(kind, id){
   const ex = id ? searchesCache.find(s=>s.id===id) : null;
   sEdit = ex ? JSON.parse(JSON.stringify(ex)) : {
     id:null, kind, name:"", locationId:637640, cityName:"Москва", gender:"mf",
-    config: kind==="clothes" ? { brands: defaultBrands() } : { models: [] },
+    config: kind==="clothes" ? { brands: defaultBrands() } : { models: defaultModels() },
     params:{ photo:false, desc:true, seller:true }, active:true,
   };
   if(kind==="clothes" && !Array.isArray(sEdit.config.brands)) sEdit.config.brands = [];
@@ -773,9 +778,13 @@ function renderSearchSheet(){
       <p class="fieldHint">Бренд ищется <b>только в названии</b> объявления. Сленг и русское написание подставляются сами — их можно поправить кнопкой ✎.</p>
     </div>` : `
     <div class="field"><label id="itemsCount">Модели · включено ${enabledCount} из ${items.length}</label>
+      <div class="rowTools">
+        <input id="modelFilter" type="search" placeholder="Найти модель…" autocomplete="off">
+        <button type="button" class="chipBtn" id="mAllOn">Все вкл</button>
+        <button type="button" class="chipBtn" id="mAllOff">Все выкл</button>
+      </div>
       <div id="modelRows"></div>
-      <button type="button" class="btn btn-outline" id="addModel" style="margin-top:6px;">+ Добавить модель</button>
-      <p class="fieldHint">Модель и память определяются по названию объявления. «Любая» память — подойдёт любой объём.</p>
+      <p class="fieldHint">Включите нужные модели и задайте потолок цены. Память — «любая» или конкретная; чтобы задать разные цены для разной памяти, нажмите <b>+</b> у модели — появится ещё одна строка.</p>
     </div>`;
   $("#srSheet").innerHTML = `
     <div class="sheetHandle"></div>
@@ -826,7 +835,7 @@ function renderSearchSheet(){
   const create = $("#srCreate");
   if(create) create.addEventListener("click", async ()=>{
     if(!s.locationId){ showToast("Выберите город"); return; }
-    if(!items.some(x=>x.enabled)){ showToast(kind==="clothes"?"Включите хотя бы один бренд":"Добавьте хотя бы одну модель"); return; }
+    if(!items.some(x=>x.enabled)){ showToast(kind==="clothes"?"Включите хотя бы один бренд":"Включите хотя бы одну модель"); return; }
     create.disabled = true;
     try{ await apiJson("/api/searches","POST", searchBody()); haptic("success"); showToast("Поиск создан и запущен"); closeSearchSheet(); }
     catch(e){ showToast("Не удалось создать: "+e.message); create.disabled = false; }
@@ -846,7 +855,7 @@ function renderBrandRows(){
     <div class="itemRow ${b.enabled?"on":""}">
       <label class="switchCtl"><input type="checkbox" data-bon="${i}" ${b.enabled?"checked":""}><span class="track"></span><span class="thumb"></span></label>
       <span class="itemName">${escHtml(b.name)}</span>
-      <input class="priceIn" type="number" inputmode="numeric" min="0" step="500" data-bprice="${i}" value="${b.maxPrice||""}" placeholder="любая">
+      <input class="priceIn" type="number" inputmode="numeric" min="0" step="500" data-bprice="${i}" value="${b.maxPrice||""}" placeholder="до ₽">
       <button type="button" class="miniBtn" data-balias="${i}" title="Варианты написания">✎</button>
       <button type="button" class="miniBtn" data-bdel="${i}" title="Удалить">✕</button>
     </div>
@@ -877,22 +886,28 @@ function updateItemsCount(){
   el.textContent = (sEdit.kind==="clothes"?"Бренды":"Модели") + ` · включено ${items.filter(x=>x.enabled).length} из ${items.length}`;
 }
 function renderModelRows(){
-  const s = sEdit, wrap = $("#modelRows");
-  wrap.innerHTML = s.config.models.map((m,i)=>`
+  const s = sEdit, wrap = $("#modelRows"), f = normAlias(($("#modelFilter")||{}).value||"");
+  const memLabel = x=> x===0 ? "любая" : (x>=1024 ? "1 ТБ" : x+" ГБ");
+  const rows = s.config.models.map((m,i)=>({m,i})).filter(({m})=> !f || normAlias("iphone "+m.model).includes(f) || normAlias(m.model).includes(f));
+  wrap.innerHTML = rows.map(({m,i})=>`
     <div class="itemRow ${m.enabled?"on":""}">
       <label class="switchCtl"><input type="checkbox" data-mon="${i}" ${m.enabled?"checked":""}><span class="track"></span><span class="thumb"></span></label>
-      <select class="selIn" data-mmodel="${i}">${IPHONE_MODELS.map(x=>`<option value="${x}" ${x===m.model?"selected":""}>${x}</option>`).join("")}</select>
-      <select class="selIn" data-mmem="${i}">${IPHONE_MEMORY.map(x=>`<option value="${x}" ${Number(m.memory||0)===x?"selected":""}>${x===0?"любая":(x>=1024?"1 ТБ":x+" ГБ")}</option>`).join("")}</select>
-      <input class="priceIn" type="number" inputmode="numeric" min="0" step="1000" data-mprice="${i}" value="${m.maxPrice||""}" placeholder="любая">
-      <button type="button" class="miniBtn" data-mdel="${i}" title="Удалить">✕</button>
-    </div>`).join("") || `<p class="muted small">Добавьте модели, которые ищете.</p>`;
+      <span class="itemName modelName">${escHtml(m.model)}</span>
+      <select class="memIn" data-mmem="${i}">${IPHONE_MEMORY.map(x=>`<option value="${x}" ${Number(m.memory||0)===x?"selected":""}>${memLabel(x)}</option>`).join("")}</select>
+      <input class="priceIn" type="number" inputmode="numeric" min="0" step="1000" data-mprice="${i}" value="${m.maxPrice||""}" placeholder="до ₽">
+      <button type="button" class="miniBtn" data-mdup="${i}" title="Ещё строка с другой памятью">+</button>
+      <button type="button" class="miniBtn" data-mdel="${i}" title="Удалить строку">✕</button>
+    </div>`).join("") || `<p class="muted small">Ничего не найдено</p>`;
   wrap.querySelectorAll("[data-mon]").forEach(c=> c.addEventListener("change", ()=>{ s.config.models[c.dataset.mon].enabled=c.checked; c.closest(".itemRow").classList.toggle("on",c.checked); updateItemsCount(); scheduleSave(); }));
-  wrap.querySelectorAll("[data-mmodel]").forEach(c=> c.addEventListener("change", ()=>{ s.config.models[c.dataset.mmodel].model=c.value; scheduleSave(); }));
   wrap.querySelectorAll("[data-mmem]").forEach(c=> c.addEventListener("change", ()=>{ s.config.models[c.dataset.mmem].memory=Number(c.value)||null; scheduleSave(); }));
   wrap.querySelectorAll("[data-mprice]").forEach(c=> c.addEventListener("input", ()=>{ const v=parseInt(c.value,10); s.config.models[c.dataset.mprice].maxPrice=v>0?v:null; scheduleSave(); }));
+  wrap.querySelectorAll("[data-mdup]").forEach(b=> b.addEventListener("click", ()=>{
+    const i=Number(b.dataset.mdup), src=s.config.models[i];
+    s.config.models.splice(i+1,0,{ model:src.model, memory:null, maxPrice:null, enabled:true }); haptic("selection"); renderSearchSheet(); scheduleSave(); }));
   wrap.querySelectorAll("[data-mdel]").forEach(b=> b.addEventListener("click", ()=>{ s.config.models.splice(Number(b.dataset.mdel),1); renderSearchSheet(); scheduleSave(); }));
-  const add = $("#addModel");
-  if(add) add.addEventListener("click", ()=>{ s.config.models.push({ model:"15 Pro", memory:null, maxPrice:null, enabled:true }); haptic("selection"); renderSearchSheet(); scheduleSave(); });
+  const flt = $("#modelFilter"); if(flt && !flt.dataset.bound){ flt.dataset.bound="1"; flt.addEventListener("input", renderModelRows); }
+  const on = $("#mAllOn"); if(on && !on.dataset.bound){ on.dataset.bound="1"; on.addEventListener("click", ()=>{ s.config.models.forEach(m=>m.enabled=true); renderSearchSheet(); scheduleSave(); }); }
+  const off = $("#mAllOff"); if(off && !off.dataset.bound){ off.dataset.bound="1"; off.addEventListener("click", ()=>{ s.config.models.forEach(m=>m.enabled=false); renderSearchSheet(); scheduleSave(); }); }
 }
 
 $("#addIphoneBtn").addEventListener("click", ()=> openSearchSheet("iphone", null));

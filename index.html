@@ -171,6 +171,13 @@ button,input,textarea{font-family:inherit;}
 .condWrap{display:flex;flex-wrap:wrap;gap:6px;}
 .condChip{border:1px solid var(--border);background:var(--surface);color:var(--text-secondary);border-radius:99px;padding:8px 12px;font-size:13px;font-weight:700;cursor:pointer;}
 .condChip.on{background:var(--accent);border-color:var(--accent);color:var(--on-accent);}
+.catalogBtn{display:flex;align-items:center;justify-content:space-between;width:100%;border:1px solid var(--border);background:var(--surface-2);color:var(--text);border-radius:12px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;margin:8px 0;}
+#catalogBox{margin-bottom:6px;}
+.statusCard{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:14px;box-shadow:var(--shadow);margin-bottom:6px;}
+.stOk,.stBad{font-weight:800;font-size:14px;padding:10px 12px;border-radius:12px;margin-bottom:8px;}
+.stOk{background:rgba(52,168,83,.12);color:#1e7e34;}
+.stBad{background:rgba(220,53,69,.12);color:#b02a37;}
+.stSec{font-size:12.5px;font-weight:800;text-transform:uppercase;letter-spacing:.03em;color:var(--text-secondary);margin:12px 0 4px;}
 .approveRow{display:flex;gap:8px;margin:-6px 0 14px;}
 .approveRow .btn{padding:9px;font-size:13.5px;}
 
@@ -238,6 +245,8 @@ button,input,textarea{font-family:inherit;}
   <main class="view" id="adminView" hidden>
     <h2 class="viewTitle">Админка</h2>
     <p class="muted small viewSub">Все пользователи приложения и их подписки.</p>
+    <div id="statusPanel"></div>
+    <h3 class="sectionTitle">Пользователи</h3>
     <div id="adminList"></div>
   </main>
 
@@ -605,6 +614,7 @@ async function renderAdmin(){
     wrap.innerHTML = `<div class="emptyState">Не удалось загрузить список пользователей.<br>Ошибка: ${escHtml((e&&e.message)||"неизвестна")}</div>`;
     return;
   }
+  renderStatusPanel(users);
   if(!users.length){
     wrap.innerHTML = `<div class="emptyState">Пока ни одного пользователя.</div>`;
     return;
@@ -650,7 +660,7 @@ async function renderAdmin(){
    обслуживает одной общей ссылкой «по всей России», а нужное каждому отбирает сам.
    Настройки сохраняются автоматически (через ~1 секунду после изменения). */
 const CITIES = [["Вся Россия",621540],["Москва",637640],["Санкт-Петербург",653240],["Новосибирск",641780],["Екатеринбург",654070],["Казань",650400],["Нижний Новгород",640860],["Челябинск",661420],["Красноярск",635320],["Самара",653040],["Уфа",646600],["Ростов-на-Дону",652000],["Омск",642320],["Краснодар",633540],["Воронеж",625810],["Пермь",644200],["Волгоград",624840],["Саратов",653241],["Тюмень",659020],["Тольятти",653140],["Ижевск",659300],["Барнаул",621630],["Ульяновск",659880],["Иркутск",628970],["Хабаровск",660250],["Ярославль",662810],["Владивосток",644560],["Махачкала",647420],["Томск",657600],["Оренбург",642790],["Кемерово",631270],["Новокузнецк",631430],["Рязань",652430],["Набережные Челны",650510],["Астрахань",623130],["Пенза",643560],["Липецк",637440],["Чебоксары",662210],["Балашиха",637770],["Калининград",630090],["Тула",658080],["Курск",636160],["Севастополь",621585],["Ставрополь",656350],["Улан-Удэ",653271],["Сочи",634450],["Тверь",656901],["Магнитогорск",661100],["Иваново",628500],["Брянск",623880],["Белгород",623430],["Сургут",660630],["Владимир",624360],["Чита",661950],["Архангельск",622660],["Нижний Тагил",654410],["Симферополь",621565],["Калуга",630410],["Смоленск",655100],["Курган",635860],["Череповец",625650],["Орёл",643190],["Вологда",625390],["Саранск",649210],["Якутск",649810],["Владикавказ",649870],["Подольск",639180],["Мурманск",640160],["Тамбов",656830],["Грозный",653391],["Стерлитамак",646520],["Петрозаводск",648220],["Кострома",632490],["Нижневартовск",660480],["Новороссийск",634030],["Йошкар-Ола",648760],["Химки",639740],["Таганрог",652100],["Комсомольск-на-Амуре",660060],["Сыктывкар",648630],["Нальчик",629770],["Шахты",652200],["Дзержинск",640650],["Братск",628890],["Орск",642800],["Ангарск",628810],["Энгельс",653265],["Великий Новгород",641270],["Королёв",638520],["Псков",645450],["Бийск",621670],["Прокопьевск",631500],["Южно-Сахалинск",653690],["Балаково",653245],["Рыбинск",662760],["Армавир",632760],["Северодвинск",623010],["Петропавловск-Камчатский",630730],["Абакан",650910],["Норильск",635430],["Сызрань",653120],["Волгодонск",651280],["Каменск-Уральский",654170],["Уссурийск",645160],["Новочеркасск",651830],["Златоуст",660930],["Электросталь",639940],["Альметьевск",650210],["Мытищи",638920],["Люберцы",638790],["Керчь",621560],["Салават",646450],["Миасс",661130],["Копейск",661010],["Пятигорск",656200],["Одинцово",639040],["Коломна",638480],["Кисловодск",655720],["Майкоп",645660],["Хасавюрт",647940],["Новомосковск",657900],["Серпухов",639470],["Новочебоксарск",662150],["Нефтеюганск",660470],["Димитровград",659610],["Дербент",647030],["Камышин",624970],["Невинномысск",655950],["Муром",624600],["Батайск",651180],["Новый Уренгой",662420],["Сергиев Посад",639440],["Ноябрьск",662430],["Щёлково",639910],["Кызыл",650740],["Обнинск",630530],["Жуковский",638240],["Евпатория",621581],["Элиста",653341],["Арзамас",640330],["Ачинск",634960],["Ханты-Мансийск",660680],["Магадан",637540]];
-const BRAND_DICT = [{"name":"Stone Island","aliases":["stone island","stoneisland","стон айленд","стоун айленд","стоник","стон"],"price":8000},{"name":"C.P. Company","aliases":["cp company","c.p. company","cpcompany","c.p.company","сипи компани","сипи"],"price":6000},{"name":"Napapijri","aliases":["napapijri","напапиджри","напапири","напа"],"price":5000},{"name":"Levi's","aliases":["levis","levi's","levi strauss","левис","левайс","ливайс"],"price":2500},{"name":"Diesel","aliases":["diesel","дизель"],"price":3000},{"name":"Dolce & Gabbana","aliases":["dolce gabbana","dolce & gabbana","dolce&gabbana","d&g","дольче габбана","дольче","дг"],"price":7000},{"name":"Ralph Lauren","aliases":["ralph lauren","polo ralph","ральф лорен","ральф"],"price":2500},{"name":"Lacoste","aliases":["lacoste","лакост","лакоста"],"price":2500},{"name":"Tommy Hilfiger","aliases":["tommy hilfiger","tommy","томми хилфигер","томми"],"price":2000},{"name":"Calvin Klein","aliases":["calvin klein","кельвин кляйн","кальвин кляйн","кельвин"],"price":2000},{"name":"Hugo Boss","aliases":["hugo boss","хуго босс","хьюго босс"],"price":3000},{"name":"Burberry","aliases":["burberry","барберри","бербери"],"price":8000},{"name":"Moncler","aliases":["moncler","монклер"],"price":20000},{"name":"The North Face","aliases":["the north face","north face","tnf","норт фейс"],"price":5000},{"name":"Carhartt","aliases":["carhartt","кархарт","кархартт"],"price":3000},{"name":"Stüssy","aliases":["stussy","stüssy","стусси","стасси"],"price":3500},{"name":"Supreme","aliases":["supreme","суприм"],"price":5000},{"name":"Arc'teryx","aliases":["arcteryx","arc'teryx","arc teryx","артерикс","арктерикс"],"price":10000},{"name":"Barbour","aliases":["barbour","барбор","барбур"],"price":6000},{"name":"Fred Perry","aliases":["fred perry","фред перри"],"price":2500},{"name":"Armani","aliases":["armani","emporio armani","ea7","armani exchange","армани"],"price":3000},{"name":"Moschino","aliases":["moschino","москино"],"price":4000},{"name":"Versace","aliases":["versace","версаче"],"price":6000},{"name":"Dsquared2","aliases":["dsquared2","dsquared","дискваред"],"price":5000},{"name":"Kenzo","aliases":["kenzo","кензо"],"price":4000},{"name":"Off-White","aliases":["off-white","off white","offwhite","офф вайт","оф вайт"],"price":7000},{"name":"Palm Angels","aliases":["palm angels","палм энджелс","палм ангелс"],"price":6000},{"name":"Gucci","aliases":["gucci","гучи","гуччи"],"price":12000},{"name":"Prada","aliases":["prada","прада"],"price":10000},{"name":"Balenciaga","aliases":["balenciaga","баленсиага"],"price":12000},{"name":"G-Star","aliases":["g-star","g star","gstar","джи стар","гстар"],"price":3000},{"name":"John Richmond","aliases":["john richmond","richmond","ричмонд"],"price":4000},{"name":"Bikkembergs","aliases":["bikkembergs","бикембергс","бикем"],"price":3000},{"name":"Ed Hardy","aliases":["ed hardy","эд харди"],"price":3000}];
+const BRAND_DICT = [{"name":"Stone Island","aliases":["stone island","stoneisland","стон айленд","стоун айленд","стоник","стон"],"price":8000},{"name":"C.P. Company","aliases":["cp company","c.p. company","cpcompany","c.p.company","сипи компани","сипи"],"price":6000},{"name":"Napapijri","aliases":["napapijri","напапиджри","напапири"],"price":5000},{"name":"Levi's","aliases":["levis","levi's","levi strauss","левис","левайс","ливайс"],"price":2500},{"name":"Diesel","aliases":["diesel","дизель"],"price":3000},{"name":"Dolce & Gabbana","aliases":["dolce gabbana","dolce & gabbana","dolce&gabbana","d&g","дольче габбана","дольче","дг"],"price":7000},{"name":"Ralph Lauren","aliases":["ralph lauren","polo ralph","ральф лорен","ральф"],"price":2500},{"name":"Lacoste","aliases":["lacoste","лакост","лакоста"],"price":2500},{"name":"Tommy Hilfiger","aliases":["tommy hilfiger","tommy","томми хилфигер","томми"],"price":2000},{"name":"Calvin Klein","aliases":["calvin klein","кельвин кляйн","кальвин кляйн","кельвин"],"price":2000},{"name":"Hugo Boss","aliases":["hugo boss","хуго босс","хьюго босс"],"price":3000},{"name":"Burberry","aliases":["burberry","барберри","бербери"],"price":8000},{"name":"Moncler","aliases":["moncler","монклер"],"price":20000},{"name":"The North Face","aliases":["the north face","north face","tnf","норт фейс"],"price":5000},{"name":"Carhartt","aliases":["carhartt","кархарт","кархартт"],"price":3000},{"name":"Stüssy","aliases":["stussy","stüssy","стусси","стасси"],"price":3500},{"name":"Supreme","aliases":["supreme","суприм"],"price":5000},{"name":"Arc'teryx","aliases":["arcteryx","arc'teryx","arc teryx","артерикс","арктерикс"],"price":10000},{"name":"Barbour","aliases":["barbour","барбор","барбур"],"price":6000},{"name":"Fred Perry","aliases":["fred perry","фред перри"],"price":2500},{"name":"Armani","aliases":["armani","emporio armani","ea7","armani exchange","армани"],"price":3000},{"name":"Moschino","aliases":["moschino","москино"],"price":4000},{"name":"Versace","aliases":["versace","версаче"],"price":6000},{"name":"Dsquared2","aliases":["dsquared2","dsquared","дискваред"],"price":5000},{"name":"Kenzo","aliases":["kenzo","кензо"],"price":4000},{"name":"Off-White","aliases":["off-white","off white","offwhite","офф вайт","оф вайт"],"price":7000},{"name":"Palm Angels","aliases":["palm angels","палм энджелс","палм ангелс"],"price":6000},{"name":"Gucci","aliases":["gucci","гучи","гуччи"],"price":12000},{"name":"Prada","aliases":["prada","прада"],"price":10000},{"name":"Balenciaga","aliases":["balenciaga","баленсиага"],"price":12000},{"name":"G-Star","aliases":["g-star","g star","gstar","джи стар","гстар"],"price":3000},{"name":"John Richmond","aliases":["john richmond","richmond","ричмонд"],"price":4000},{"name":"Bikkembergs","aliases":["bikkembergs","бикембергс","бикем"],"price":3000},{"name":"Ed Hardy","aliases":["ed hardy","эд харди"],"price":3000},{"name":"Nike","aliases":["nike","найк","найки"],"price":4000},{"name":"Jordan","aliases":["jordan","air jordan","джордан","джорданы"],"price":6000},{"name":"Adidas","aliases":["adidas","адидас","адик","адики"],"price":3000},{"name":"Yeezy","aliases":["yeezy","йизи"],"price":8000},{"name":"New Balance","aliases":["new balance","нью беленс","нью баланс","нью бэланс"],"price":4000},{"name":"Asics","aliases":["asics","асикс"],"price":4000},{"name":"Salomon","aliases":["salomon","саломон"],"price":6000},{"name":"Converse","aliases":["converse","конверс","конверсы"],"price":2500},{"name":"Rick Owens","aliases":["rick owens","рик оуэнс","рик овенс"],"price":15000},{"name":"Maison Margiela","aliases":["margiela","maison margiela","mm6","маржела","маржиела"],"price":10000},{"name":"Comme des Garçons","aliases":["comme des garcons","cdg","комм де гарсон","гарсон"],"price":6000},{"name":"Bape","aliases":["bape","a bathing ape","бейп"],"price":6000},{"name":"Chrome Hearts","aliases":["chrome hearts","хром хартс"],"price":15000},{"name":"Amiri","aliases":["amiri","амири"],"price":12000},{"name":"Vetements","aliases":["vetements","ветмо","ветеман"],"price":10000},{"name":"Fear of God","aliases":["fear of god","fog essentials","фир оф гад"],"price":6000},{"name":"Represent","aliases":["represent clo","represent","репрезент"],"price":5000},{"name":"Corteiz","aliases":["corteiz","crtz","кортейз"],"price":5000},{"name":"Trapstar","aliases":["trapstar","трапстар"],"price":5000},{"name":"Canada Goose","aliases":["canada goose","канада гус"],"price":20000},{"name":"Philipp Plein","aliases":["philipp plein","филипп плейн","плейн"],"price":8000},{"name":"Paul & Shark","aliases":["paul shark","paul & shark","пол шарк","пол энд шарк"],"price":5000},{"name":"Timberland","aliases":["timberland","тимберленд","тимбы"],"price":4000},{"name":"Dr. Martens","aliases":["dr martens","dr. martens","доктор мартинс","мартинсы","мартенсы"],"price":4000},{"name":"UGG","aliases":["ugg australia","ugg"],"price":4000},{"name":"Louis Vuitton","aliases":["louis vuitton","луи виттон","луи вуиттон"],"price":20000},{"name":"Dior","aliases":["dior","диор"],"price":15000},{"name":"Saint Laurent","aliases":["saint laurent","ysl","сен лоран","ив сен лоран"],"price":15000},{"name":"Givenchy","aliases":["givenchy","живанши"],"price":12000},{"name":"Fendi","aliases":["fendi","фенди"],"price":12000},{"name":"Bottega Veneta","aliases":["bottega veneta","боттега"],"price":15000},{"name":"Massimo Dutti","aliases":["massimo dutti","массимо дутти"],"price":3000},{"name":"Patagonia","aliases":["patagonia","патагония"],"price":5000},{"name":"Lyle & Scott","aliases":["lyle scott","lyle & scott","лайл скотт"],"price":2500},{"name":"Iceberg","aliases":["iceberg","айсберг"],"price":4000},{"name":"Evisu","aliases":["evisu","эвису"],"price":5000}];
 
 const IPHONE_MODELS = ["11","11 Pro","11 Pro Max","12 mini","12","12 Pro","12 Pro Max","13 mini","13","13 Pro","13 Pro Max","14","14 Plus","14 Pro","14 Pro Max","15","15 Plus","15 Pro","15 Pro Max","16e","16","16 Plus","16 Pro","16 Pro Max","17","Air","17 Pro","17 Pro Max"];
 const IPHONE_MEMORY = [0,64,128,256,512,1024,2048]; /* 0 = любая */
@@ -666,7 +676,7 @@ const IPHONE_MEM_BY_MODEL = {
 };
 const memLabel = x=> !x ? "Любая память" : (x>=1024 ? (x/1024)+" ТБ" : x+" ГБ");
 let openModels = new Set();
-const GENDERS = [["m","Муж"],["f","Жен"],["mf","Оба"]];
+const GENDERS = [["m","Мужское"],["f","Женское"]];
 const CONDITIONS = ["Новое с биркой","Отличное","Хорошее","Удовлетворительное"];
 
 let searchesCache = [];
@@ -708,6 +718,13 @@ function completeModels(list){
   return list;
 }
 function defaultBrands(){ return BRAND_DICT.map(b=>({ name:b.name, aliases:b.aliases.map(normAlias), maxPrice:b.price, enabled:false })); }
+/* в старые поиски добавляем новые встроенные бренды (выключенными) */
+function completeBrands(list){
+  const have = new Set(list.map(b=>normAlias(b.name)));
+  defaultBrands().forEach(b=>{ if(!have.has(normAlias(b.name))) list.push(b); });
+  return list;
+}
+let catalogOpen = false;
 function fmtPrice(n){ return n ? Number(n).toLocaleString("ru-RU")+" ₽" : "любая"; }
 
 async function refreshSearches(){
@@ -741,7 +758,7 @@ function renderSearchList(kind){
     const items = kind==="iphone" ? (s.config.models||[]) : (s.config.brands||[]);
     const on = items.filter(x=>x.enabled).length;
     const what = kind==="iphone" ? `моделей: ${on}` : `брендов: ${on}`;
-    const g = kind==="clothes" ? " · " + (GENDERS.find(x=>x[0]===s.gender)||["","Оба"])[1] : "";
+    const g = kind==="clothes" ? " · " + ((GENDERS.find(x=>x[0]===s.gender)||["","оба пола"])[1]) : "";
     return `<div class="subCard ${s.active?"active":""}" data-search="${s.id}">
       <span class="dot"></span>
       <div class="si"><b>${escHtml(s.name||s.cityName)}</b>
@@ -758,11 +775,13 @@ let sSaveTimer = null;
 function openSearchSheet(kind, id){
   const ex = id ? searchesCache.find(s=>s.id===id) : null;
   sEdit = ex ? JSON.parse(JSON.stringify(ex)) : {
-    id:null, kind, name:"", locationId:637640, cityName:"Москва", gender:"mf",
+    id:null, kind, name:"", locationId:637640, cityName:"Москва", gender:"m",
     config: kind==="clothes" ? { brands: defaultBrands() } : { models: defaultModels() },
     params:{ photo:false, desc:true, seller:true }, active:true,
   };
   if(kind==="clothes" && !Array.isArray(sEdit.config.brands)) sEdit.config.brands = [];
+  if(kind==="clothes") completeBrands(sEdit.config.brands);
+  catalogOpen = false;
   if(kind==="clothes" && !Array.isArray(sEdit.config.conditions)) sEdit.config.conditions = CONDITIONS.slice();
   if(kind==="iphone" && !Array.isArray(sEdit.config.models)) sEdit.config.models = [];
   if(kind==="iphone") completeModels(sEdit.config.models);
@@ -807,6 +826,7 @@ function renderSearchSheet(){
   const genderHtml = kind==="clothes" ? `
     <div class="field"><label>Пол</label>
       <div class="seg">${GENDERS.map(([v,t])=>`<button type="button" class="segBtn ${s.gender===v?"on":""}" data-gender="${v}">${t}</button>`).join("")}</div>
+      <p class="fieldHint">${s.gender==="mf" ? "⚠️ Этот поиск раньше искал сразу оба пола — выберите один. Для другого пола создайте отдельный поиск." : "Один поиск — один пол. Нужно и то, и другое — создайте два поиска."}</p>
     </div>
     <div class="field"><label>Состояние</label>
       <div class="condWrap">${CONDITIONS.map(c=>`<button type="button" class="condChip ${s.config.conditions.includes(c)?"on":""}" data-cond="${c}">${s.config.conditions.includes(c)?"✓ ":""}${c}</button>`).join("")}</div>
@@ -814,12 +834,19 @@ function renderSearchSheet(){
     </div>` : "";
   const itemsHtml = kind==="clothes" ? `
     <div class="field"><label id="itemsCount">Бренды · включено ${enabledCount} из ${items.length}</label>
-      <div class="rowTools">
-        <input id="brandFilter" type="search" placeholder="Найти бренд…" autocomplete="off">
-        <button type="button" class="chipBtn" id="allOn">Все вкл</button>
-        <button type="button" class="chipBtn" id="allOff">Все выкл</button>
+      <div id="selectedBrandRows"></div>
+      <button type="button" class="catalogBtn" id="catalogToggle">
+        <span>📚 Все встроенные бренды (${items.length})</span>
+        <svg class="mhChev ${catalogOpen?"open":""}" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+      </button>
+      <div id="catalogBox" ${catalogOpen?"":"hidden"}>
+        <div class="rowTools">
+          <input id="brandFilter" type="search" placeholder="Найти бренд…" autocomplete="off">
+          <button type="button" class="chipBtn" id="allOn">Все вкл</button>
+          <button type="button" class="chipBtn" id="allOff">Все выкл</button>
+        </div>
+        <div id="brandRows"></div>
       </div>
-      <div id="brandRows"></div>
       <div class="addRow">
         <input id="newBrandName" type="text" placeholder="Новый бренд, например Acne Studios" autocomplete="off">
         <button type="button" class="chipBtn" id="addBrand">+ Добавить</button>
@@ -901,23 +928,33 @@ function renderSearchSheet(){
   });
 }
 
-function renderBrandRows(){
-  const s = sEdit, wrap = $("#brandRows"), f = normAlias(($("#brandFilter")||{}).value||"");
-  const rows = s.config.brands.map((b,i)=>({b,i})).filter(({b})=> !f || normAlias(b.name).includes(f) || (b.aliases||[]).some(a=>a.includes(f)));
-  wrap.innerHTML = rows.map(({b,i})=>`
+function brandRowHtml(b,i,prefix){ return `
     <div class="itemRow ${b.enabled?"on":""}">
       <label class="switchCtl"><input type="checkbox" data-bon="${i}" ${b.enabled?"checked":""}><span class="track"></span><span class="thumb"></span></label>
       <span class="itemName">${escHtml(b.name)}</span>
       <input class="priceIn" type="number" inputmode="numeric" min="0" step="500" data-bprice="${i}" value="${b.maxPrice||""}" placeholder="до ₽">
-      <button type="button" class="miniBtn" data-balias="${i}" title="Варианты написания">✎</button>
+      <button type="button" class="miniBtn" data-balias="${prefix}${i}" title="Варианты написания">✎</button>
       <button type="button" class="miniBtn" data-bdel="${i}" title="Удалить">✕</button>
     </div>
-    <div class="aliasBox" id="alias${i}" hidden>
+    <div class="aliasBox" id="alias${prefix}${i}" hidden>
       <textarea data-baliases="${i}" rows="2">${escHtml((b.aliases||[]).join(", "))}</textarea>
       <p class="fieldHint">Как ещё пишут этот бренд — через запятую. Ищется в названии объявления.</p>
-    </div>`).join("") || `<p class="muted small">Ничего не найдено</p>`;
-  wrap.querySelectorAll("[data-bon]").forEach(c=> c.addEventListener("change", ()=>{ s.config.brands[c.dataset.bon].enabled = c.checked; c.closest(".itemRow").classList.toggle("on", c.checked); updateItemsCount(); scheduleSave(); }));
+    </div>`; }
+function renderBrandRows(){
+  const s = sEdit, wrap = $("#brandRows"), sel = $("#selectedBrandRows"), f = normAlias(($("#brandFilter")||{}).value||"");
+  const rows = s.config.brands.map((b,i)=>({b,i})).filter(({b})=> !f || normAlias(b.name).includes(f) || (b.aliases||[]).some(a=>a.includes(f)));
+  const chosen = s.config.brands.map((b,i)=>({b,i})).filter(({b})=> b.enabled);
+  sel.innerHTML = chosen.length ? chosen.map(({b,i})=> brandRowHtml(b,i,"s")).join("")
+    : `<p class="muted small" style="margin:2px 0 8px;">Пока ни одного бренда — откройте список ниже и включите нужные.</p>`;
+  wrap.innerHTML = rows.map(({b,i})=> brandRowHtml(b,i,"c")).join("") || `<p class="muted small">Ничего не найдено</p>`;
+  const tog = $("#catalogToggle"); if(tog && !tog.dataset.bound){ tog.dataset.bound="1"; tog.addEventListener("click", ()=>{ catalogOpen=!catalogOpen; $("#catalogBox").hidden=!catalogOpen; tog.querySelector(".mhChev").classList.toggle("open",catalogOpen); haptic("selection"); }); }
+  bindBrandRows(sel); bindBrandRows(wrap);
+}
+function bindBrandRows(wrap){
+  const s = sEdit;
+  wrap.querySelectorAll("[data-bon]").forEach(c=> c.addEventListener("change", ()=>{ s.config.brands[c.dataset.bon].enabled = c.checked; updateItemsCount(); scheduleSave(); renderBrandRows(); }));
   wrap.querySelectorAll("[data-bprice]").forEach(c=> c.addEventListener("input", ()=>{ const v=parseInt(c.value,10); s.config.brands[c.dataset.bprice].maxPrice = v>0?v:null; scheduleSave(); }));
+  wrap.querySelectorAll("[data-bprice]").forEach(c=> c.addEventListener("change", ()=> renderBrandRows()));
   wrap.querySelectorAll("[data-balias]").forEach(btn=> btn.addEventListener("click", ()=>{ const box=$("#alias"+btn.dataset.balias); box.hidden=!box.hidden; }));
   wrap.querySelectorAll("[data-baliases]").forEach(t=> t.addEventListener("input", ()=>{ s.config.brands[t.dataset.baliases].aliases = t.value.split(",").map(normAlias).filter(Boolean); scheduleSave(); }));
   wrap.querySelectorAll("[data-bdel]").forEach(btn=> btn.addEventListener("click", ()=>{ s.config.brands.splice(Number(btn.dataset.bdel),1); renderSearchSheet(); scheduleSave(); }));
@@ -989,6 +1026,55 @@ $("#addIphoneBtn").addEventListener("click", ()=> openSearchSheet("iphone", null
 $("#addClothesBtn").addEventListener("click", ()=> openSearchSheet("clothes", null));
 $("#srBackdrop").addEventListener("click", closeSearchSheet);
 
+
+/* ---------- панель состояния парсера (в «Админе») ---------- */
+function agoText(sec){
+  if(sec===null || sec===undefined) return "ещё не было";
+  if(sec < 60) return sec + " с назад";
+  if(sec < 3600) return Math.round(sec/60) + " мин назад";
+  return Math.round(sec/3600) + " ч назад";
+}
+async function renderStatusPanel(users){
+  const box = $("#statusPanel"); if(!box) return;
+  box.innerHTML = `<p class="muted small">Загрузка состояния…</p>`;
+  let res;
+  try{ res = await apiJson("/api/admin/status","GET"); }
+  catch(e){ box.innerHTML = `<div class="emptyState">Не удалось загрузить состояние: ${escHtml(e.message)}</div>`; return; }
+  const st = res.status;
+  if(!st){ box.innerHTML = `<div class="emptyState">Парсер ещё не присылал состояние. Оно появится через минуту после запуска нового рассыльщика.</div>`; return; }
+  const age = Math.round((Date.parse(res.serverNow) - Date.parse(res.updatedAt))/1000);
+  const name = id => { const u=(users||[]).find(x=>String(x.telegramId)===String(id)); return u ? (u.firstName || (u.username?"@"+u.username:id)) : id; };
+  const dead = age > 180;
+  const stale = st.last_ok_ago!==null && st.last_ok_ago > 300;
+  const head = dead ? `<div class="stBad">🚨 Парсер не выходил на связь ${agoText(age)} — возможно, он остановлен.</div>`
+             : stale ? `<div class="stBad">🚨 Выдача стоит: последний успешный ответ от Авито ${agoText(st.last_ok_ago)}.</div>`
+             : `<div class="stOk">✅ Работает · последний успешный ответ ${agoText(st.last_ok_ago)} · обновлено ${agoText(age)}</div>`;
+  const eng = st.engine || {};
+  const proxies = (eng.per_proxy||[]).map(p=>`<div class="idRow"><span>${p.alive?"🟢":"🔴"} ${escHtml(p.proxy)}</span>
+      <span class="muted">${p.success_pct??"–"}% · ${p.avg_ok_sec??"–"} с · смен IP ${p.ip_changes}</span></div>`).join("")
+    || `<p class="muted small">${eng.error ? "Движок не отвечает: "+escHtml(eng.error) : "нет данных"}</p>`;
+  const sources = (st.sources||[]).map(x=>`<div class="idRow"><span>${escHtml(x.name)}</span>
+      <span class="muted">${agoText(x.last_ok_ago)} · ок ${x.ok15} / сбоев ${x.fail15}${x.overflow15?` · переполн. ${x.overflow15}`:""}</span></div>`).join("")
+    || `<p class="muted small">нет активных</p>`;
+  const lat = st.latency ? `медиана ${st.latency.median} с · 90% быстрее ${st.latency.p90} с (${st.latency.count} увед. за 10 мин)` : "ещё не посчитана";
+  const sent = Object.entries(st.sent_hour||{}).sort((a,b)=>b[1]-a[1]).map(([id,n])=>`<div class="idRow"><span>${escHtml(String(name(id)))}</span><span class="muted">${n}</span></div>`).join("")
+    || `<p class="muted small">за последний час уведомлений не было</p>`;
+  const errs = Object.entries(st.deliver_errors||{}).map(([id,d])=>{
+    const nostart = (d.last||"").includes("chat not found");
+    return `<div class="idRow"><span>⚠️ ${escHtml(String(name(id)))}</span><span class="muted">${nostart?"не нажал /start в боте-отправителе":escHtml((d.last||"").slice(0,60))} (${d.count})</span></div>`;
+  }).join("");
+  box.innerHTML = `<div class="statusCard">
+    ${head}
+    <div class="stSec">Прокси (живых ${eng.alive??"?"} из ${eng.proxies??"?"})</div>${proxies}
+    <div class="stSec">Источники · за 15 мин</div>${sources}
+    <div class="stSec">Задержка от публикации</div><p class="small" style="margin:2px 0 6px;">${lat}</p>
+    <div class="stSec">Уведомлений за час · всего ${st.sent_hour_total||0}</div>${sent}
+    ${errs?`<div class="stSec">Проблемы с доставкой</div>${errs}`:""}
+    <p class="muted small" style="margin-top:8px;">Поисков: ${st.counts?.searches??"?"} · ссылок: ${st.counts?.links??"?"} · рассыльщик работает ${st.uptime_min??"?"} мин</p>
+    <button class="btn btn-outline" id="statusRefresh" type="button" style="margin-top:8px;">Обновить</button>
+  </div>`;
+  $("#statusRefresh").addEventListener("click", ()=> renderStatusPanel(users));
+}
 
 /* ---------- переключение вкладок ---------- */
 function switchTab(name){

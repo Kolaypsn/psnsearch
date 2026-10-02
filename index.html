@@ -149,8 +149,18 @@ button,input,textarea{font-family:inherit;}
 .field .selIn,.selIn{flex:1;min-width:0;width:auto;border:1px solid var(--border);background:var(--surface-2);color:var(--text);border-radius:8px;padding:7px 6px;font-size:13.5px;outline:none;}
 .field .memIn,.memIn{width:70px;flex:none;border:1px solid var(--border);background:var(--surface-2);color:var(--text);border-radius:8px;padding:7px 4px;font-size:13px;outline:none;}
 .modelName{white-space:normal;line-height:1.15;font-size:13.5px;}
-#modelRows .priceIn{width:72px;}
+#modelRows .priceIn{width:104px;}
 #modelRows .itemRow{gap:6px;}
+.modelGroup{border-bottom:1px solid var(--border);}
+.modelHead{display:flex;align-items:center;gap:8px;width:100%;border:none;background:none;color:var(--text);padding:12px 0;text-align:left;cursor:pointer;}
+.mhName{font-size:14.5px;font-weight:800;flex:none;}
+.modelGroup:not(.on) .mhName{opacity:.7;}
+.mhSum{flex:1;min-width:0;font-size:12.5px;color:var(--text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right;}
+.modelGroup.on .mhSum{color:var(--accent);font-weight:700;}
+.mhChev{flex:none;color:var(--text-secondary);transition:transform .2s;}
+.mhChev.open{transform:rotate(180deg);}
+.modelBody{padding:0 0 8px 6px;}
+.modelBody .itemRow{border-bottom:none;padding:5px 0;}
 .miniBtn{flex:none;width:30px;height:30px;border:none;border-radius:8px;background:var(--surface-2);color:var(--text-secondary);font-size:14px;cursor:pointer;}
 .aliasBox{padding:6px 0 10px;}
 .aliasBox textarea{width:100%;border:1px solid var(--border);background:var(--surface-2);color:var(--text);border-radius:8px;padding:8px;font-size:13px;outline:none;resize:vertical;}
@@ -640,7 +650,19 @@ const CITIES = [["Вся Россия",621540],["Москва",637640],["Сан�
 const BRAND_DICT = [{"name":"Stone Island","aliases":["stone island","stoneisland","стон айленд","стоун айленд","стоник","стон"],"price":8000},{"name":"C.P. Company","aliases":["cp company","c.p. company","cpcompany","c.p.company","сипи компани","сипи"],"price":6000},{"name":"Napapijri","aliases":["napapijri","напапиджри","напапири","напа"],"price":5000},{"name":"Levi's","aliases":["levis","levi's","levi strauss","левис","левайс","ливайс"],"price":2500},{"name":"Diesel","aliases":["diesel","дизель"],"price":3000},{"name":"Dolce & Gabbana","aliases":["dolce gabbana","dolce & gabbana","dolce&gabbana","d&g","дольче габбана","дольче","дг"],"price":7000},{"name":"Ralph Lauren","aliases":["ralph lauren","polo ralph","ральф лорен","ральф"],"price":2500},{"name":"Lacoste","aliases":["lacoste","лакост","лакоста"],"price":2500},{"name":"Tommy Hilfiger","aliases":["tommy hilfiger","tommy","томми хилфигер","томми"],"price":2000},{"name":"Calvin Klein","aliases":["calvin klein","кельвин кляйн","кальвин кляйн","кельвин"],"price":2000},{"name":"Hugo Boss","aliases":["hugo boss","хуго босс","хьюго босс"],"price":3000},{"name":"Burberry","aliases":["burberry","барберри","бербери"],"price":8000},{"name":"Moncler","aliases":["moncler","монклер"],"price":20000},{"name":"The North Face","aliases":["the north face","north face","tnf","норт фейс"],"price":5000},{"name":"Carhartt","aliases":["carhartt","кархарт","кархартт"],"price":3000},{"name":"Stüssy","aliases":["stussy","stüssy","стусси","стасси"],"price":3500},{"name":"Supreme","aliases":["supreme","суприм"],"price":5000},{"name":"Arc'teryx","aliases":["arcteryx","arc'teryx","arc teryx","артерикс","арктерикс"],"price":10000},{"name":"Barbour","aliases":["barbour","барбор","барбур"],"price":6000},{"name":"Fred Perry","aliases":["fred perry","фред перри"],"price":2500},{"name":"Armani","aliases":["armani","emporio armani","ea7","armani exchange","армани"],"price":3000},{"name":"Moschino","aliases":["moschino","москино"],"price":4000},{"name":"Versace","aliases":["versace","версаче"],"price":6000},{"name":"Dsquared2","aliases":["dsquared2","dsquared","дискваред"],"price":5000},{"name":"Kenzo","aliases":["kenzo","кензо"],"price":4000},{"name":"Off-White","aliases":["off-white","off white","offwhite","офф вайт","оф вайт"],"price":7000},{"name":"Palm Angels","aliases":["palm angels","палм энджелс","палм ангелс"],"price":6000},{"name":"Gucci","aliases":["gucci","гучи","гуччи"],"price":12000},{"name":"Prada","aliases":["prada","прада"],"price":10000},{"name":"Balenciaga","aliases":["balenciaga","баленсиага"],"price":12000},{"name":"G-Star","aliases":["g-star","g star","gstar","джи стар","гстар"],"price":3000},{"name":"John Richmond","aliases":["john richmond","richmond","ричмонд"],"price":4000},{"name":"Bikkembergs","aliases":["bikkembergs","бикембергс","бикем"],"price":3000},{"name":"Ed Hardy","aliases":["ed hardy","эд харди"],"price":3000}];
 
 const IPHONE_MODELS = ["11","11 Pro","11 Pro Max","12 mini","12","12 Pro","12 Pro Max","13 mini","13","13 Pro","13 Pro Max","14","14 Plus","14 Pro","14 Pro Max","15","15 Plus","15 Pro","15 Pro Max","16e","16","16 Plus","16 Pro","16 Pro Max","17","Air","17 Pro","17 Pro Max"];
-const IPHONE_MEMORY = [0,64,128,256,512,1024]; /* 0 = любая */
+const IPHONE_MEMORY = [0,64,128,256,512,1024,2048]; /* 0 = любая */
+/* какая память бывает у каждой модели */
+const IPHONE_MEM_BY_MODEL = {
+  "11":[64,128,256], "11 Pro":[64,256,512], "11 Pro Max":[64,256,512],
+  "12 mini":[64,128,256], "12":[64,128,256], "12 Pro":[128,256,512], "12 Pro Max":[128,256,512],
+  "13 mini":[128,256,512], "13":[128,256,512], "13 Pro":[128,256,512,1024], "13 Pro Max":[128,256,512,1024],
+  "14":[128,256,512], "14 Plus":[128,256,512], "14 Pro":[128,256,512,1024], "14 Pro Max":[128,256,512,1024],
+  "15":[128,256,512], "15 Plus":[128,256,512], "15 Pro":[128,256,512,1024], "15 Pro Max":[256,512,1024],
+  "16e":[128,256,512], "16":[128,256,512], "16 Plus":[128,256,512], "16 Pro":[128,256,512,1024], "16 Pro Max":[256,512,1024],
+  "17":[256,512], "Air":[256,512,1024], "17 Pro":[256,512,1024], "17 Pro Max":[256,512,1024,2048]
+};
+const memLabel = x=> !x ? "Любая память" : (x>=1024 ? (x/1024)+" ТБ" : x+" ГБ");
+let openModels = new Set();
 const GENDERS = [["m","Муж"],["f","Жен"],["mf","Оба"]];
 
 let searchesCache = [];
@@ -665,7 +687,22 @@ function autoAliases(name){
   if(/[a-z]/.test(base)) set.add(latToRu(base));
   return Array.from(set).filter(Boolean);
 }
-function defaultModels(){ return IPHONE_MODELS.slice().reverse().map(m=>({ model:m, memory:null, maxPrice:null, enabled:false })); }
+function defaultModels(){
+  const out = [];
+  IPHONE_MODELS.slice().reverse().forEach(m=>{
+    out.push({ model:m, memory:null, maxPrice:null, enabled:false });
+    (IPHONE_MEM_BY_MODEL[m]||[]).forEach(mem=> out.push({ model:m, memory:mem, maxPrice:null, enabled:false }));
+  });
+  return out;
+}
+/* старые поиски (одна строка на модель) дополняем строками памяти */
+function completeModels(list){
+  const have = new Set(list.map(r=> r.model+"|"+(r.memory||0)));
+  defaultModels().forEach(r=>{ if(!have.has(r.model+"|"+(r.memory||0))) list.push(r); });
+  const order = IPHONE_MODELS.slice().reverse();
+  list.sort((a,b)=> order.indexOf(a.model)-order.indexOf(b.model) || (a.memory||0)-(b.memory||0));
+  return list;
+}
 function defaultBrands(){ return BRAND_DICT.map(b=>({ name:b.name, aliases:b.aliases.map(normAlias), maxPrice:b.price, enabled:false })); }
 function fmtPrice(n){ return n ? Number(n).toLocaleString("ru-RU")+" ₽" : "любая"; }
 
@@ -723,6 +760,8 @@ function openSearchSheet(kind, id){
   };
   if(kind==="clothes" && !Array.isArray(sEdit.config.brands)) sEdit.config.brands = [];
   if(kind==="iphone" && !Array.isArray(sEdit.config.models)) sEdit.config.models = [];
+  if(kind==="iphone") completeModels(sEdit.config.models);
+  openModels = new Set();
   $("#srBackdrop").hidden = false; $("#srSheet").hidden = false;
   renderSearchSheet();
 }
@@ -778,14 +817,14 @@ function renderSearchSheet(){
       </div>
       <p class="fieldHint">Бренд ищется <b>только в названии</b> объявления. Сленг и русское написание подставляются сами — их можно поправить кнопкой ✎.</p>
     </div>` : `
-    <div class="field"><label id="itemsCount">Модели · включено ${enabledCount} из ${items.length}</label>
+    <div class="field"><label id="itemsCount">Модели · выбрано вариантов: ${enabledCount}</label>
       <div class="rowTools">
         <input id="modelFilter" type="search" placeholder="Найти модель…" autocomplete="off">
         <button type="button" class="chipBtn" id="mAllOn">Все вкл</button>
         <button type="button" class="chipBtn" id="mAllOff">Все выкл</button>
       </div>
       <div id="modelRows"></div>
-      <p class="fieldHint">Включите нужные модели и задайте потолок цены. Память — «любая» или конкретная; чтобы задать разные цены для разной памяти, нажмите <b>+</b> у модели — появится ещё одна строка.</p>
+      <p class="fieldHint">Нажмите на модель — откроется список памяти. Включите нужную память и впишите для неё потолок цены. «Любая память» — одна цена на все объёмы.</p>
     </div>`;
   $("#srSheet").innerHTML = `
     <div class="sheetHandle"></div>
@@ -884,31 +923,53 @@ function renderBrandRows(){
 function updateItemsCount(){
   const el = $("#itemsCount"); if(!el || !sEdit) return;
   const items = sEdit.kind==="clothes" ? sEdit.config.brands : sEdit.config.models;
-  el.textContent = (sEdit.kind==="clothes"?"Бренды":"Модели") + ` · включено ${items.filter(x=>x.enabled).length} из ${items.length}`;
+  el.textContent = sEdit.kind==="clothes" ? `Бренды · включено ${items.filter(x=>x.enabled).length} из ${items.length}` : `Модели · выбрано вариантов: ${items.filter(x=>x.enabled).length}`;
 }
 function renderModelRows(){
   const s = sEdit, wrap = $("#modelRows"), f = normAlias(($("#modelFilter")||{}).value||"");
-  const memLabel = x=> x===0 ? "любая" : (x>=1024 ? "1 ТБ" : x+" ГБ");
-  const rows = s.config.models.map((m,i)=>({m,i})).filter(({m})=> !f || normAlias("iphone "+m.model).includes(f) || normAlias(m.model).includes(f));
-  wrap.innerHTML = rows.map(({m,i})=>`
-    <div class="itemRow ${m.enabled?"on":""}">
-      <label class="switchCtl"><input type="checkbox" data-mon="${i}" ${m.enabled?"checked":""}><span class="track"></span><span class="thumb"></span></label>
-      <span class="itemName modelName">${escHtml(m.model)}</span>
-      <select class="memIn" data-mmem="${i}">${IPHONE_MEMORY.map(x=>`<option value="${x}" ${Number(m.memory||0)===x?"selected":""}>${memLabel(x)}</option>`).join("")}</select>
-      <input class="priceIn" type="number" inputmode="numeric" min="0" step="1000" data-mprice="${i}" value="${m.maxPrice||""}" placeholder="до ₽">
-      <button type="button" class="miniBtn" data-mdup="${i}" title="Ещё строка с другой памятью">+</button>
-      <button type="button" class="miniBtn" data-mdel="${i}" title="Удалить строку">✕</button>
-    </div>`).join("") || `<p class="muted small">Ничего не найдено</p>`;
-  wrap.querySelectorAll("[data-mon]").forEach(c=> c.addEventListener("change", ()=>{ s.config.models[c.dataset.mon].enabled=c.checked; c.closest(".itemRow").classList.toggle("on",c.checked); updateItemsCount(); scheduleSave(); }));
-  wrap.querySelectorAll("[data-mmem]").forEach(c=> c.addEventListener("change", ()=>{ s.config.models[c.dataset.mmem].memory=Number(c.value)||null; scheduleSave(); }));
-  wrap.querySelectorAll("[data-mprice]").forEach(c=> c.addEventListener("input", ()=>{ const v=parseInt(c.value,10); s.config.models[c.dataset.mprice].maxPrice=v>0?v:null; scheduleSave(); }));
-  wrap.querySelectorAll("[data-mdup]").forEach(b=> b.addEventListener("click", ()=>{
-    const i=Number(b.dataset.mdup), src=s.config.models[i];
-    s.config.models.splice(i+1,0,{ model:src.model, memory:null, maxPrice:null, enabled:true }); haptic("selection"); renderSearchSheet(); scheduleSave(); }));
-  wrap.querySelectorAll("[data-mdel]").forEach(b=> b.addEventListener("click", ()=>{ s.config.models.splice(Number(b.dataset.mdel),1); renderSearchSheet(); scheduleSave(); }));
+  const groups = [];
+  s.config.models.forEach((m,i)=>{
+    let g = groups.find(x=>x.model===m.model);
+    if(!g){ g = { model:m.model, rows:[] }; groups.push(g); }
+    g.rows.push({m,i});
+  });
+  const shown = groups.filter(g=> !f || normAlias("iphone "+g.model).includes(f) || normAlias(g.model).includes(f));
+  wrap.innerHTML = shown.map(g=>{
+    const on = g.rows.filter(r=>r.m.enabled).length;
+    const open = openModels.has(g.model) || (f && shown.length<=3);
+    const summary = on ? g.rows.filter(r=>r.m.enabled).map(r=> memLabel(r.m.memory).replace("Любая память","любая") + (r.m.maxPrice? " ≤ "+Number(r.m.maxPrice).toLocaleString("ru-RU"):"")).join(", ") : "выключена";
+    return `<div class="modelGroup ${on?"on":""}">
+      <button type="button" class="modelHead" data-mgroup="${escHtml(g.model)}">
+        <span class="mhName">iPhone ${escHtml(g.model)}</span>
+        <span class="mhSum">${escHtml(summary)}</span>
+        <svg class="mhChev ${open?"open":""}" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+      </button>
+      <div class="modelBody" ${open?"":"hidden"}>
+        ${g.rows.map(({m,i})=>`
+          <div class="itemRow ${m.enabled?"on":""}">
+            <label class="switchCtl"><input type="checkbox" data-mon="${i}" ${m.enabled?"checked":""}><span class="track"></span><span class="thumb"></span></label>
+            <span class="itemName modelName">${memLabel(m.memory)}</span>
+            <input class="priceIn" type="number" inputmode="numeric" min="0" step="1000" data-mprice="${i}" value="${m.maxPrice||""}" placeholder="до ₽">
+          </div>`).join("")}
+      </div>
+    </div>`;
+  }).join("") || `<p class="muted small">Ничего не найдено</p>`;
+  wrap.querySelectorAll("[data-mgroup]").forEach(b=> b.addEventListener("click", ()=>{
+    const m=b.dataset.mgroup; if(openModels.has(m)) openModels.delete(m); else openModels.add(m); haptic("selection"); renderModelRows(); }));
+  wrap.querySelectorAll("[data-mon]").forEach(c=> c.addEventListener("change", ()=>{ s.config.models[c.dataset.mon].enabled=c.checked; updateItemsCount(); scheduleSave(); renderModelRowsKeepFocus(); }));
+  wrap.querySelectorAll("[data-mprice]").forEach(c=> c.addEventListener("input", ()=>{ const v=parseInt(c.value,10); s.config.models[c.dataset.mprice].maxPrice=v>0?v:null;
+    if(v>0 && !s.config.models[c.dataset.mprice].enabled){ s.config.models[c.dataset.mprice].enabled=true; const sw=wrap.querySelector(`[data-mon="${c.dataset.mprice}"]`); if(sw){ sw.checked=true; sw.closest(".itemRow").classList.add("on"); } updateItemsCount(); }
+    scheduleSave(); }));
+  wrap.querySelectorAll("[data-mprice]").forEach(c=> c.addEventListener("blur", renderModelRowsKeepFocus));
   const flt = $("#modelFilter"); if(flt && !flt.dataset.bound){ flt.dataset.bound="1"; flt.addEventListener("input", renderModelRows); }
-  const on = $("#mAllOn"); if(on && !on.dataset.bound){ on.dataset.bound="1"; on.addEventListener("click", ()=>{ s.config.models.forEach(m=>m.enabled=true); renderSearchSheet(); scheduleSave(); }); }
+  const on = $("#mAllOn"); if(on && !on.dataset.bound){ on.dataset.bound="1"; on.addEventListener("click", ()=>{ s.config.models.forEach(m=>{ if(!m.memory) m.enabled=true; }); renderSearchSheet(); scheduleSave(); }); }
   const off = $("#mAllOff"); if(off && !off.dataset.bound){ off.dataset.bound="1"; off.addEventListener("click", ()=>{ s.config.models.forEach(m=>m.enabled=false); renderSearchSheet(); scheduleSave(); }); }
+}
+/* перерисовать заголовки (сводку) без потери фокуса в поле цены */
+function renderModelRowsKeepFocus(){
+  const a = document.activeElement;
+  if(a && a.matches && a.matches("#modelRows [data-mprice]")) return;
+  renderModelRows();
 }
 
 $("#addIphoneBtn").addEventListener("click", ()=> openSearchSheet("iphone", null));

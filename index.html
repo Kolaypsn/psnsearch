@@ -1071,7 +1071,8 @@ async function renderStatusPanel(users){
     <div class="stSec">Задержка от публикации</div><p class="small" style="margin:2px 0 6px;">${lat}</p>
     <div class="stSec">Уведомлений за час · всего ${st.sent_hour_total||0}</div>${sent}
     ${errs?`<div class="stSec">Проблемы с доставкой</div>${errs}`:""}
-    <p class="muted small" style="margin-top:8px;">Поисков: ${st.counts?.searches??"?"} · ссылок: ${st.counts?.links??"?"} · рассыльщик работает ${st.uptime_min??"?"} мин</p>
+    <p class="muted small" style="margin-top:8px;">Поисков: ${st.counts?.searches??"?"} · ссылок: ${st.counts?.links??"?"} · рассыльщик работает ${st.uptime_min??"?"} мин
+      ${st.raised_skipped!==undefined ? `<br>отсеяно поднятых старых: ${st.raised_skipped} · дублирующих запросов: ${st.hedges} · в очереди на отправку: ${st.send_queue??0}` : ""}</p>
     <button class="btn btn-outline" id="statusRefresh" type="button" style="margin-top:8px;">Обновить</button>
   </div>`;
   $("#statusRefresh").addEventListener("click", ()=> renderStatusPanel(users));

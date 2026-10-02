@@ -168,6 +168,9 @@ button,input,textarea{font-family:inherit;}
 .sugItem{display:block;width:100%;text-align:left;border:none;background:none;color:var(--text);padding:11px 12px;font-size:14.5px;border-bottom:1px solid var(--border);cursor:pointer;}
 .sugItem:last-child{border-bottom:none;}
 .sugEmpty{padding:11px 12px;font-size:13px;color:var(--text-secondary);}
+.condWrap{display:flex;flex-wrap:wrap;gap:6px;}
+.condChip{border:1px solid var(--border);background:var(--surface);color:var(--text-secondary);border-radius:99px;padding:8px 12px;font-size:13px;font-weight:700;cursor:pointer;}
+.condChip.on{background:var(--accent);border-color:var(--accent);color:var(--on-accent);}
 .approveRow{display:flex;gap:8px;margin:-6px 0 14px;}
 .approveRow .btn{padding:9px;font-size:13.5px;}
 
@@ -664,6 +667,7 @@ const IPHONE_MEM_BY_MODEL = {
 const memLabel = x=> !x ? "Любая память" : (x>=1024 ? (x/1024)+" ТБ" : x+" ГБ");
 let openModels = new Set();
 const GENDERS = [["m","Муж"],["f","Жен"],["mf","Оба"]];
+const CONDITIONS = ["Новое с биркой","Отличное","Хорошее","Удовлетворительное"];
 
 let searchesCache = [];
 let searchesLoaded = false;
@@ -759,6 +763,7 @@ function openSearchSheet(kind, id){
     params:{ photo:false, desc:true, seller:true }, active:true,
   };
   if(kind==="clothes" && !Array.isArray(sEdit.config.brands)) sEdit.config.brands = [];
+  if(kind==="clothes" && !Array.isArray(sEdit.config.conditions)) sEdit.config.conditions = CONDITIONS.slice();
   if(kind==="iphone" && !Array.isArray(sEdit.config.models)) sEdit.config.models = [];
   if(kind==="iphone") completeModels(sEdit.config.models);
   openModels = new Set();
@@ -802,6 +807,10 @@ function renderSearchSheet(){
   const genderHtml = kind==="clothes" ? `
     <div class="field"><label>Пол</label>
       <div class="seg">${GENDERS.map(([v,t])=>`<button type="button" class="segBtn ${s.gender===v?"on":""}" data-gender="${v}">${t}</button>`).join("")}</div>
+    </div>
+    <div class="field"><label>Состояние</label>
+      <div class="condWrap">${CONDITIONS.map(c=>`<button type="button" class="condChip ${s.config.conditions.includes(c)?"on":""}" data-cond="${c}">${s.config.conditions.includes(c)?"✓ ":""}${c}</button>`).join("")}</div>
+      <p class="fieldHint">Приходят только объявления с выбранным состоянием. Если продавец состояние не указал — объявление тоже придёт.</p>
     </div>` : "";
   const itemsHtml = kind==="clothes" ? `
     <div class="field"><label id="itemsCount">Бренды · включено ${enabledCount} из ${items.length}</label>
@@ -863,6 +872,10 @@ function renderSearchSheet(){
   ci.addEventListener("blur", ()=> setTimeout(()=>{ sug.hidden = true; ci.value = s.cityName; }, 200));
   /* пол */
   $all("[data-gender]").forEach(b=> b.addEventListener("click", ()=>{ s.gender = b.dataset.gender; haptic("selection"); renderSearchSheet(); scheduleSave(); }));
+  $all("[data-cond]").forEach(b=> b.addEventListener("click", ()=>{
+    const c = b.dataset.cond, list = s.config.conditions;
+    if(list.includes(c)){ if(list.length===1){ showToast("Нужно оставить хотя бы одно состояние"); return; } list.splice(list.indexOf(c),1); } else list.push(c);
+    haptic("selection"); renderSearchSheet(); scheduleSave(); }));
   $("#srName").addEventListener("input", e=>{ s.name = e.target.value; scheduleSave(); });
   $all("[data-param]").forEach(c=> c.addEventListener("change", ()=>{ s.params[c.dataset.param] = c.checked; scheduleSave(); }));
   const act = $("#srActive");

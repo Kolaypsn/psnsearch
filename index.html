@@ -1170,7 +1170,8 @@ async function renderBilling(){
     ${bill.payId ? (bill.payLink
       ? `<button class="btn btn-primary" id="openPay" type="button" style="margin-top:8px;background:var(--success);">💳 Открыть оплату СБП</button>
          <button class="btn btn-outline" id="checkPay" type="button" style="margin-top:8px;">Я оплатил(а) — проверить</button>`
-      : `<div class="stOk" style="margin-top:8px;">⏳ Готовлю ссылку на оплату…</div>`) : ""}
+      : `<div class="stOk" style="margin-top:8px;">⏳ Готовлю оплату — подождите несколько секунд…</div>`) : ""}
+    ${bill.payId && bill.payLink ? `<p class="fieldHint" style="margin-top:6px;">После оплаты в банке доступ включится сам через несколько секунд — эту страницу можно не закрывать.</p>` : ""}
     <p class="fieldHint" style="margin-top:8px;">Оплата через СБП в приложении вашего банка. Доступ включается сразу после оплаты; срок добавляется к текущей подписке.</p>`;
   box.querySelectorAll("[data-bprod]").forEach(b=> b.onclick = ()=>{ bill.product=b.dataset.bprod; bill.quote=null; haptic("selection"); renderBilling(); });
   box.querySelectorAll("[data-btier]").forEach(b=> b.onclick = ()=>{ bill.tier=b.dataset.btier; bill.quote=null; haptic("selection"); renderBilling(); });
@@ -1184,7 +1185,7 @@ async function renderBilling(){
     try{ const r = await apiJson("/api/billing/redeem","POST",{ code:bill.promo }); haptic("success"); showToast(`🎁 +${r.days} дн. доступа`); await loadMe(); renderBilling(); }
     catch(e){ showToast(e.message); } };
   $("#payBtn").onclick = async ()=>{
-    const btn = $("#payBtn"); btn.disabled = true;
+    const btn = $("#payBtn"); btn.disabled = true; btn.textContent = "⏳ Подождите несколько секунд…";
     try{
       const r = await apiJson("/api/billing/checkout","POST",{ product:bill.product, tier:bill.tier, days:bill.days, promo:bill.promo });
       bill.payId = r.paymentId; bill.payLink = r.link || null;

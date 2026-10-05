@@ -239,24 +239,34 @@ button,input,textarea{font-family:inherit;}
 
   <!-- ---------- Профиль ---------- -->
   <main class="view" id="profileView" hidden>
-    <h2 class="viewTitle">Профиль</h2>
+    <h2 class="viewTitle">Подписка</h2>
+    <div id="billingBlock"></div>
+    <h3 class="sectionTitle">Профиль</h3>
     <div id="profileBlock"></div>
   </main>
 
   <!-- ---------- Админка (видна только администратору) ---------- -->
   <main class="view" id="adminView" hidden>
     <h2 class="viewTitle">Админка</h2>
-    <p class="muted small viewSub">Все пользователи приложения и их подписки.</p>
-    <div id="statusPanel"></div>
-    <h3 class="sectionTitle">Пользователи</h3>
-    <div id="adminList"></div>
+    <div class="seg" id="adminSeg" style="margin-bottom:14px;">
+      <button type="button" class="segBtn on" data-aseg="users">Пользователи</button>
+      <button type="button" class="segBtn" data-aseg="prices">Цены и промо</button>
+      <button type="button" class="segBtn" data-aseg="pays">Платежи</button>
+    </div>
+    <div id="adminUsersPane">
+      <div id="statusPanel"></div>
+      <h3 class="sectionTitle">Пользователи</h3>
+      <div id="adminList"></div>
+    </div>
+    <div id="adminPricesPane" hidden></div>
+    <div id="adminPaysPane" hidden></div>
   </main>
 
   <nav class="tabbar">
     <button class="tabBtn" data-tab="info"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><circle cx="12" cy="8" r=".6" fill="currentColor" stroke="none"/></svg><span>Информация</span></button>
     <button class="tabBtn active" data-tab="iphone"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2" width="12" height="20" rx="3"/><path d="M10.5 4.6h3"/><path d="M11 19h2"/></svg><span>iPhone</span></button>
     <button class="tabBtn" data-tab="clothes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3l-5 3 2 4 2-1v12h10V9l2 1 2-4-5-3c0 2-1.8 3-4 3S8 5 8 3z"/></svg><span>Шмот</span></button>
-    <button class="tabBtn" data-tab="profile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg><span>Профиль</span></button>
+    <button class="tabBtn" data-tab="profile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/><path d="M7 15h3"/></svg><span>Подписка</span></button>
     <button class="tabBtn" data-tab="admin" id="adminTabBtn" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.6-3 8.4-7 10-4-1.6-7-5.4-7-10V6l7-3z"/></svg><span>Админ</span></button>
   </nav>
 </div>
@@ -279,10 +289,8 @@ const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : 
 /* ---------- плейсхолдеры — впишите свои значения перед публикацией ---------- */
 const SENDER_BOT_USERNAME = "psn_senderbot";       /* бот, который будет рассылать саму выдачу объявлений */
 const SUPPORT_USERNAME    = "psn_helper_psn";          /* аккаунт поддержки */
-const FAQ_URL             = "https://telegra.ph/";   /* страница с частыми вопросами */
+const MAIN_CHANNEL_USERNAME = "PSNapple";         /* основной канал */
 const NEWS_CHANNEL_USERNAME = "PSNparser";        /* новостной канал */
-const TERMS_URL           = "https://telegra.ph/";   /* пользовательское соглашение */
-const PRIVACY_URL         = "https://telegra.ph/";   /* политика конфиденциальности */
 
 /* ---------- бэкенд (Cloudflare Worker avito-head-api) ---------- */
 /* После деплоя воркера впишите сюда его адрес, например "https://avito-head-api.ваш-акк.workers.dev" */
@@ -507,10 +515,8 @@ $("#addSubBtn").addEventListener("click", ()=> openSubSheet(null));
 function renderInfo(){
   const items = [
     { icon:iconSupport(), title:"Поддержка", sub:"@"+SUPPORT_USERNAME, href:"https://t.me/"+SUPPORT_USERNAME },
-    { icon:iconFaq(), title:"Частые вопросы", sub:"telegra.ph", href:FAQ_URL },
+    { icon:iconNews(), title:"Основной канал", sub:"@"+MAIN_CHANNEL_USERNAME, href:"https://t.me/"+MAIN_CHANNEL_USERNAME },
     { icon:iconNews(), title:"Новостной канал", sub:"@"+NEWS_CHANNEL_USERNAME, href:"https://t.me/"+NEWS_CHANNEL_USERNAME },
-    { icon:iconDoc(), title:"Пользовательское соглашение", sub:"telegra.ph", href:TERMS_URL },
-    { icon:iconDoc(), title:"Политика конфиденциальности", sub:"telegra.ph", href:PRIVACY_URL },
   ];
   $("#infoLinks").innerHTML = items.map(it=>`
     <a class="linkRow" href="${it.href}" target="_blank" rel="noopener">
@@ -526,6 +532,7 @@ function iconDoc(){ return `<svg width="18" height="18" viewBox="0 0 24 24" fill
 
 /* ---------- вкладка «Профиль» ---------- */
 function renderProfile(){
+  renderBilling();
   const u = (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) || null;
   if(!u){
     /* диагностика: показываем, чего именно не хватает, вместо общей фразы —
@@ -552,7 +559,7 @@ function renderProfile(){
     <div class="idRow"><span class="muted">Telegram ID</span><span>${u.id}</span></div>
     <div class="idRow"><span class="muted">Поисков iPhone / Шмот</span><span>${searchesCache.filter(x=>x.kind==="iphone").length} / ${searchesCache.filter(x=>x.kind==="clothes").length}</span></div>
     <div class="idRow"><span class="muted">Ссылок</span><span>${loadSubs().length}</span></div>
-    <div class="idRow"><span class="muted">Доступ</span><span>${meState && meState.approved===false ? "ждёт одобрения" : "открыт"}</span></div>
+
     ${meState ? `
     <div class="paramsBox" style="margin-top:16px;">
       <div class="paramRow">
@@ -628,9 +635,16 @@ async function renderAdmin(){
     const srchHtml = srch.map(s=>`
       <div class="idRow"><span>${s.kind==="iphone"?"📱":"👕"} ${escHtml(s.name||s.cityName)} · ${escHtml(s.cityName)}${s.active?" · работает":" · остановлен"}</span>
         <span class="muted">${((s.kind==="iphone"?s.config.models:s.config.brands)||[]).filter(x=>x.enabled).length}</span></div>`).join("");
-    const approveHtml = u.isAdmin ? "" : `<div class="approveRow">${u.approved
-      ? `<button class="btn btn-secondary" data-approve="${u.telegramId}" data-val="0" type="button">Закрыть доступ</button>`
-      : `<button class="btn btn-primary" data-approve="${u.telegramId}" data-val="1" type="button">✅ Одобрить доступ</button>`}</div>`;
+    const a = u.access || { products:{}, trial:{} };
+    const accText = u.isAdmin ? "админ" : u.staff ? "сотрудник (бесплатно)" :
+      [Object.entries(a.products).map(([p,x])=>`${PROD_NAMES[p]} ${x.tier==="pro"?"Про":"Баз."} до ${fmtDate(x.until)}`).join(", "),
+       a.trial && a.trial.active ? `пробный до ${fmtDate(a.trial.until)}` : ""].filter(Boolean).join(" · ") || "нет подписки";
+    const approveHtml = u.isAdmin ? "" : `<div class="approveRow" style="flex-wrap:wrap;">
+      <button class="btn ${u.staff?"btn-secondary":"btn-outline"}" data-staff="${u.telegramId}" data-val="${u.staff?0:1}" type="button">${u.staff?"Убрать из сотрудников":"Сделать сотрудником"}</button>
+      <select class="selIn" id="gp${u.telegramId}"><option value="iphone">iPhone</option><option value="clothes">Шмот</option></select>
+      <select class="selIn" id="gt${u.telegramId}"><option value="base">Базовый</option><option value="pro">Про</option></select>
+      <input class="priceIn" id="gd${u.telegramId}" type="number" value="7" style="width:56px;" title="дней">
+      <button class="btn btn-primary" data-grant="${u.telegramId}" type="button">Выдать</button></div>`;
     const subsHtml = srchHtml + (subs.length ? subs.map(s=>`
       <div class="idRow"><span>${escHtml(s.name||"Без названия")}${s.active?" · работает":" · остановлена"}</span></div>
       <p class="fieldHint" style="margin:-4px 0 8px;word-break:break-all;">${escHtml(s.url||"")}</p>
@@ -642,13 +656,20 @@ async function renderAdmin(){
           <div class="profileName">${escHtml(name)}${u.isAdmin?" · админ":""}</div>
           <div class="profileMeta">Telegram ID ${u.telegramId}${u.username?" · @"+escHtml(u.username):""}</div>
           <div class="profileMeta">Доставка: ${u.deliveryTarget==="head"?"этот бот":"бот-отправитель"} · поисков: ${srch.length} · ссылок: ${subs.length}</div>
-          <div class="profileMeta" style="font-weight:700;color:${u.approved?"var(--success)":"var(--warning)"};">${u.approved?"Доступ открыт":"⏳ Ждёт одобрения"}</div>
+          <div class="profileMeta" style="font-weight:700;color:${(u.isAdmin||u.staff||accText!=="нет подписки")?"var(--success)":"var(--warning)"};">${escHtml(accText)}${u.phone?` · ${escHtml(u.phone)}`:""}</div>
         </div>
       </div>
       ${approveHtml}
       <div class="paramsBox" style="margin:-4px 0 16px;">${subsHtml}</div>
     `;
   }).join("");
+  wrap.querySelectorAll("[data-staff]").forEach(b=> b.addEventListener("click", async ()=>{
+    try{ await apiJson(`/api/admin/users/${b.dataset.staff}/staff`,"POST",{ staff: b.dataset.val==="1" }); haptic("success"); showToast(b.dataset.val==="1"?"Теперь сотрудник: доступ бесплатно":"Больше не сотрудник"); renderAdmin(); }
+    catch(e){ showToast(e.message); } }));
+  wrap.querySelectorAll("[data-grant]").forEach(b=> b.addEventListener("click", async ()=>{
+    const id = b.dataset.grant;
+    try{ await apiJson(`/api/admin/users/${id}/grant`,"POST",{ product:$("#gp"+id).value, tier:$("#gt"+id).value, days:+$("#gd"+id).value }); haptic("success"); showToast("Доступ выдан — человеку придёт сообщение"); renderAdmin(); }
+    catch(e){ showToast(e.message); } }));
   wrap.querySelectorAll("[data-approve]").forEach(b=> b.addEventListener("click", async ()=>{
     b.disabled = true;
     try{ await apiJson(`/api/admin/users/${b.dataset.approve}/approve`,"POST",{ approved: b.dataset.val==="1" }); haptic("success");
@@ -740,9 +761,10 @@ async function refreshSearches(){
   renderSearchList("iphone"); renderSearchList("clothes");
 }
 function pendingHtml(){
-  return `<div class="emptyState">⏳ Заявка на доступ отправлена администратору.<br>Как только её одобрят, здесь можно будет добавить поиск — придёт сообщение в боте.</div>`;
+  return `<div class="emptyState">Чтобы получать объявления, нужна подписка.<br>Можно начать с бесплатного пробного периода.<br><br>
+    <button class="btn btn-primary" type="button" onclick="document.querySelector('[data-tab=profile]').click()">Оформить подписку</button></div>`;
 }
-function isPending(){ return meState && meState.approved === false; }
+function isPending(){ return !!(meState && meState.access && !meState.access.any); }
 
 function renderSearchList(kind){
   const wrap = $(kind==="iphone" ? "#iphoneList" : "#clothesList");
@@ -1101,6 +1123,166 @@ async function renderStatusPanel(users){
   </div>`;
   $("#statusRefresh").addEventListener("click", ()=> renderStatusPanel(users));
 }
+
+/* ====================== ПОДПИСКА И ОПЛАТА ====================== */
+const PROD_NAMES = { iphone:"iPhone", clothes:"Шмот" };
+const DUR_NAMES = { 7:"Неделя", 30:"Месяц", 60:"2 месяца" };
+const fmtDate = iso => iso ? new Date(iso).toLocaleDateString("ru-RU",{day:"numeric",month:"long"}) : "";
+const rub = n => Number(n).toLocaleString("ru-RU") + " ₽";
+let bill = { data:null, product:"iphone", tier:"base", days:30, promo:"", quote:null, payId:null };
+
+async function renderBilling(){
+  const box = $("#billingBlock"); if(!box) return;
+  try{ bill.data = await apiJson("/api/billing","GET"); }
+  catch(e){ box.innerHTML = `<div class="emptyState">Не удалось загрузить подписку: ${escHtml(e.message)}</div>`; return; }
+  const { settings:st, access:a } = bill.data;
+  if(!st.durations.includes(bill.days)) bill.days = st.durations[1] || st.durations[0];
+  const status = a.free ? `<div class="stOk">✅ ${a.admin ? "Администратор" : "Сотрудник"} — полный доступ без оплаты</div>`
+    : Object.keys(PROD_NAMES).map(p=>{
+        const x = a.products[p];
+        return `<div class="idRow"><span>${PROD_NAMES[p]}</span><span>${x ? `<b>${(st.tiers[x.tier]||{}).title||x.tier}</b> до ${fmtDate(x.until)}` : (a.trial.active ? `пробный до ${fmtDate(a.trial.until)}` : `<span class="muted">нет подписки</span>`)}</span></div>`;
+      }).join("");
+  const trialHtml = (!a.free && !a.trial.used) ? `
+    <div class="statusCard" style="margin:12px 0;">
+      <b>🎁 Пробный период — ${st.trial.days} дня бесплатно</b>
+      <p class="fieldHint" style="margin:6px 0 10px;">До ${st.trial.searches} поисков через фильтры iPhone и Шмот (без своих ссылок). Один раз на номер телефона.</p>
+      <button class="btn btn-primary" id="trialBtn" type="button">${a.phoneVerified ? "Включить пробный период" : "Подтвердить номер и включить"}</button>
+    </div>` : "";
+  const prices = (st.prices[bill.product]||{})[bill.tier]||{};
+  const tierBtns = ["base","pro"].map(t=>{ const T = st.tiers[t]; return `<button type="button" class="segBtn ${bill.tier===t?"on":""}" data-btier="${t}">${T.title}<br><span style="font-weight:600;font-size:11px;opacity:.85;">${T.searches} поисков${T.links?` · ${T.links} ссылки`:""}</span></button>`; }).join("");
+  const durBtns = st.durations.map(d=>`<button type="button" class="segBtn ${bill.days===d?"on":""}" data-bdays="${d}">${DUR_NAMES[d]||d+" дн."}<br><span style="font-weight:600;font-size:11px;opacity:.85;">${prices[d]?rub(prices[d]):"—"}</span></button>`).join("");
+  const q = bill.quote && bill.quote.product===bill.product && bill.quote.tier===bill.tier && bill.quote.days===bill.days ? bill.quote : null;
+  const amount = q ? q.amount : prices[bill.days];
+  box.innerHTML = `
+    <div class="statusCard">${status}</div>
+    ${trialHtml}
+    <h3 class="sectionTitle">Оформить подписку</h3>
+    <div class="field"><label>Что</label><div class="seg">${Object.keys(PROD_NAMES).map(p=>`<button type="button" class="segBtn ${bill.product===p?"on":""}" data-bprod="${p}">${PROD_NAMES[p]}</button>`).join("")}</div></div>
+    <div class="field"><label>Тариф</label><div class="seg">${tierBtns}</div>
+      <p class="fieldHint">Свои ссылки на поиск Авито — только в тарифе «${st.tiers.pro.title}».</p></div>
+    <div class="field"><label>Срок</label><div class="seg">${durBtns}</div></div>
+    <div class="field"><label>Промокод</label>
+      <div class="rowTools"><input id="promoIn" type="text" placeholder="Если есть" value="${escHtml(bill.promo)}" autocomplete="off" style="text-transform:uppercase;">
+      <button type="button" class="chipBtn" id="promoApply">Применить</button><button type="button" class="chipBtn" id="promoRedeem" title="Промокод на бесплатные дни">Дни</button></div>
+      ${q && q.message ? `<p class="fieldHint">${escHtml(q.message)}</p>` : ""}</div>
+    <button class="btn btn-primary" id="payBtn" type="button">Оплатить через СБП · ${amount ? rub(amount) : "—"}${q && q.amount < q.price ? ` <s style="opacity:.6;font-weight:600;">${rub(q.price)}</s>` : ""}</button>
+    ${bill.payId ? `<button class="btn btn-outline" id="checkPay" type="button" style="margin-top:8px;">Я оплатил(а) — проверить</button>` : ""}
+    <p class="fieldHint" style="margin-top:8px;">Оплата через СБП в приложении вашего банка. Доступ включается сразу после оплаты; срок добавляется к текущей подписке.</p>`;
+  box.querySelectorAll("[data-bprod]").forEach(b=> b.onclick = ()=>{ bill.product=b.dataset.bprod; bill.quote=null; haptic("selection"); renderBilling(); });
+  box.querySelectorAll("[data-btier]").forEach(b=> b.onclick = ()=>{ bill.tier=b.dataset.btier; bill.quote=null; haptic("selection"); renderBilling(); });
+  box.querySelectorAll("[data-bdays]").forEach(b=> b.onclick = ()=>{ bill.days=+b.dataset.bdays; bill.quote=null; haptic("selection"); renderBilling(); });
+  $("#promoIn").oninput = e => { bill.promo = e.target.value.trim(); };
+  $("#promoApply").onclick = async ()=>{
+    try{ bill.quote = await apiJson("/api/billing/quote","POST",{ product:bill.product, tier:bill.tier, days:bill.days, promo:bill.promo }); renderBilling(); }
+    catch(e){ showToast(e.message); } };
+  $("#promoRedeem").onclick = async ()=>{
+    if(!bill.promo) return showToast("Введите промокод");
+    try{ const r = await apiJson("/api/billing/redeem","POST",{ code:bill.promo }); haptic("success"); showToast(`🎁 +${r.days} дн. доступа`); await loadMe(); renderBilling(); }
+    catch(e){ showToast(e.message); } };
+  $("#payBtn").onclick = async ()=>{
+    const btn = $("#payBtn"); btn.disabled = true;
+    try{
+      const r = await apiJson("/api/billing/checkout","POST",{ product:bill.product, tier:bill.tier, days:bill.days, promo:bill.promo });
+      bill.payId = r.paymentId;
+      if(tg && tg.openLink) tg.openLink(r.link); else window.open(r.link, "_blank");
+      renderBilling(); startPayWatch();
+    }catch(e){ showToast(e.message); btn.disabled = false; } };
+  const chk = $("#checkPay"); if(chk) chk.onclick = ()=> checkPayment(true);
+  const tb = $("#trialBtn"); if(tb) tb.onclick = startTrial;
+}
+
+async function checkPayment(manual){
+  if(!bill.payId) return;
+  try{
+    const r = await apiJson(`/api/billing/check/${bill.payId}`,"POST");
+    if(r.status==="paid"){ bill.payId=null; haptic("success"); showToast("✅ Оплата получена!"); await loadMe(); renderBilling(); return true; }
+    if(r.status==="failed"){ bill.payId=null; showToast("Оплата не прошла или ссылка истекла"); renderBilling(); return true; }
+    if(manual) showToast("Оплата ещё не поступила — подождите несколько секунд");
+  }catch(e){ if(manual) showToast(e.message); }
+  return false;
+}
+function startPayWatch(){
+  let n = 0;
+  const t = setInterval(async ()=>{ n++; if(!bill.payId || n>40 || await checkPayment(false)) clearInterval(t); }, 6000);
+}
+document.addEventListener("visibilitychange", ()=>{ if(!document.hidden && bill.payId) checkPayment(false); });
+
+async function startTrial(){
+  const a = bill.data.access;
+  if(!a.phoneVerified){
+    if(!(tg && tg.requestContact)){ showToast("Обновите Telegram, чтобы подтвердить номер"); return; }
+    tg.requestContact(async ok=>{
+      if(!ok){ showToast("Без номера пробный период включить нельзя"); return; }
+      showToast("Номер отправлен, подтверждаю…");
+      for(let i=0;i<10;i++){ await new Promise(r=>setTimeout(r,2000)); const d = await apiJson("/api/billing","GET").catch(()=>null); if(d && d.access.phoneVerified){ bill.data=d; return startTrial(); } }
+      showToast("Не дождался подтверждения — нажмите ещё раз через минуту");
+    });
+    return;
+  }
+  try{ const r = await apiJson("/api/billing/trial","POST"); haptic("success"); showToast(`🎁 Пробный период до ${fmtDate(r.until)}`); await loadMe(); renderBilling(); }
+  catch(e){ showToast(e.message); }
+}
+
+/* ---------- админ: цены, промокоды, платежи ---------- */
+async function renderAdminPrices(){
+  const box = $("#adminPricesPane");
+  box.innerHTML = `<p class="muted small">Загрузка…</p>`;
+  let st, promos;
+  try{ st = (await apiJson("/api/admin/billing","GET")).settings; promos = (await apiJson("/api/admin/promos","GET")).promos; }
+  catch(e){ box.innerHTML = `<div class="emptyState">${escHtml(e.message)}</div>`; return; }
+  const num = (path, v) => `<input class="priceIn" type="number" inputmode="numeric" min="0" data-path="${path}" value="${v??""}">`;
+  const priceTable = p => `<div class="statusCard" style="margin-bottom:10px;"><b>${PROD_NAMES[p]}</b>
+    ${["base","pro"].map(t=>`<div class="idRow"><span>${st.tiers[t].title}</span><span style="display:flex;gap:6px;">${st.durations.map(d=>`<label class="muted small" style="text-align:center;">${DUR_NAMES[d]||d}<br>${num(`prices.${p}.${t}.${d}`, ((st.prices[p]||{})[t]||{})[d])}</label>`).join("")}</span></div>`).join("")}</div>`;
+  box.innerHTML = `
+    <h3 class="sectionTitle" style="margin-top:0;">Цены, ₽</h3>
+    ${priceTable("iphone")}${priceTable("clothes")}
+    <h3 class="sectionTitle">Тарифы и пробный период</h3>
+    <div class="statusCard">
+      ${["base","pro"].map(t=>`<div class="idRow"><span>${st.tiers[t].title}</span><span>поисков ${num(`tiers.${t}.searches`, st.tiers[t].searches)} ссылок ${num(`tiers.${t}.links`, st.tiers[t].links)}</span></div>`).join("")}
+      <div class="idRow"><span>Пробный</span><span>дней ${num("trial.days", st.trial.days)} поисков ${num("trial.searches", st.trial.searches)}</span></div>
+    </div>
+    <button class="btn btn-primary" id="saveBilling" type="button" style="margin-top:10px;">Сохранить цены и тарифы</button>
+    <button class="btn btn-outline" id="testPay" type="button" style="margin-top:8px;">Проверить связь с Точкой (ссылка на 1 ₽)</button>
+    <h3 class="sectionTitle">Промокоды</h3>
+    <div class="statusCard">
+      <div class="rowTools"><input id="pcCode" placeholder="КОД" style="text-transform:uppercase;"><select id="pcKind" class="selIn"><option value="percent">скидка %</option><option value="days">бесплатные дни</option></select></div>
+      <div class="rowTools"><input id="pcValue" type="number" placeholder="% или дни"><select id="pcProd" class="selIn"><option value="all">iPhone и Шмот</option><option value="iphone">только iPhone</option><option value="clothes">только Шмот</option></select></div>
+      <div class="rowTools"><input id="pcMax" type="number" placeholder="Сколько раз (пусто — без лимита)"><input id="pcExp" type="date" title="Действует до"></div>
+      <button class="btn btn-primary" id="pcCreate" type="button">Создать промокод</button>
+    </div>
+    ${(promos||[]).map(p=>`<div class="idRow"><span><b>${escHtml(p.code)}</b> · ${p.kind==="percent"?`−${p.value}%`:`+${p.value} дн.`} · ${p.product==="all"?"всё":PROD_NAMES[p.product]}<br><span class="muted small">использован ${p.used}${p.max_uses?` из ${p.max_uses}`:""}${p.expires_at?` · до ${fmtDate(p.expires_at)}`:""}</span></span>
+      <label class="switchCtl"><input type="checkbox" data-pcode="${escHtml(p.code)}" ${p.active?"checked":""}><span class="track"></span><span class="thumb"></span></label></div>`).join("") || `<p class="muted small">Промокодов пока нет</p>`}`;
+  $("#saveBilling").onclick = async ()=>{
+    const out = {};
+    box.querySelectorAll("[data-path]").forEach(i=>{ const parts=i.dataset.path.split("."); let o=out; parts.slice(0,-1).forEach(k=>{ o[k]=o[k]||{}; o=o[k]; }); o[parts[parts.length-1]] = i.value; });
+    try{ await apiJson("/api/admin/billing","PUT",out); haptic("success"); showToast("Сохранено"); renderAdminPrices(); }catch(e){ showToast(e.message); } };
+  $("#testPay").onclick = async ()=>{
+    try{ const r = await apiJson("/api/admin/billing/test","POST"); showToast("Связь есть, открываю ссылку на 1 ₽"); if(tg && tg.openLink) tg.openLink(r.link); else window.open(r.link); }
+    catch(e){ showToast("Ошибка Точки: " + e.message); } };
+  $("#pcCreate").onclick = async ()=>{
+    try{ await apiJson("/api/admin/promos","POST",{ code:$("#pcCode").value, kind:$("#pcKind").value, value:$("#pcValue").value, product:$("#pcProd").value, maxUses:$("#pcMax").value||null, expiresAt:$("#pcExp").value||null });
+         haptic("success"); showToast("Промокод создан"); renderAdminPrices(); }catch(e){ showToast(e.message); } };
+  box.querySelectorAll("[data-pcode]").forEach(c=> c.onchange = async ()=>{
+    try{ await apiJson(`/api/admin/promos/${encodeURIComponent(c.dataset.pcode)}`,"POST",{ active:c.checked }); showToast(c.checked?"Промокод включён":"Промокод выключен"); }catch(e){ showToast(e.message); } });
+}
+async function renderAdminPays(){
+  const box = $("#adminPaysPane");
+  box.innerHTML = `<p class="muted small">Загрузка…</p>`;
+  try{
+    const pays = (await apiJson("/api/admin/payments","GET")).payments || [];
+    const paid = pays.filter(p=>p.status==="paid");
+    box.innerHTML = `<div class="statusCard"><b>Оплачено: ${paid.length} на ${rub(paid.reduce((s,p)=>s+p.amount,0))}</b> <span class="muted small">(последние 100 платежей)</span></div>` +
+      (pays.map(p=>`<div class="idRow"><span>${p.status==="paid"?"✅":p.status==="failed"?"✖️":"⏳"} ${rub(p.amount)} · ${PROD_NAMES[p.product]} · ${p.tier==="pro"?"Про":"Базовый"} · ${p.days} дн.${p.promo?" · "+escHtml(p.promo):""}<br><span class="muted small">ID ${p.user_id} · ${new Date(p.created_at).toLocaleString("ru-RU")}</span></span></div>`).join("") || `<p class="muted small">Платежей пока нет</p>`);
+  }catch(e){ box.innerHTML = `<div class="emptyState">${escHtml(e.message)}</div>`; }
+}
+$all("[data-aseg]").forEach(b=> b.addEventListener("click", ()=>{
+  $all("[data-aseg]").forEach(x=> x.classList.toggle("on", x===b));
+  $("#adminUsersPane").hidden = b.dataset.aseg!=="users";
+  $("#adminPricesPane").hidden = b.dataset.aseg!=="prices";
+  $("#adminPaysPane").hidden = b.dataset.aseg!=="pays";
+  if(b.dataset.aseg==="prices") renderAdminPrices();
+  if(b.dataset.aseg==="pays") renderAdminPays();
+}));
 
 /* ---------- переключение вкладок ---------- */
 function switchTab(name){

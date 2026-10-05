@@ -161,6 +161,7 @@ button,input,textarea{font-family:inherit;}
 .mhChev.open{transform:rotate(180deg);}
 .modelBody{padding:0 0 8px 6px;}
 .modelBody .itemRow{border-bottom:none;padding:5px 0;}
+.typeBtn.on{background:var(--accent);color:var(--on-accent);font-weight:800;}
 .miniBtn{flex:none;width:30px;height:30px;border:none;border-radius:8px;background:var(--surface-2);color:var(--text-secondary);font-size:14px;cursor:pointer;}
 .aliasBox{padding:6px 0 10px;}
 .aliasBox textarea{width:100%;border:1px solid var(--border);background:var(--surface-2);color:var(--text);border-radius:8px;padding:8px;font-size:13px;outline:none;resize:vertical;}
@@ -183,6 +184,7 @@ button,input,textarea{font-family:inherit;}
 
 /* ---------- tab bar ---------- */
 .tabbar{position:fixed;left:0;right:0;bottom:0;display:flex;background:var(--surface);border-top:1px solid var(--border);padding:8px 6px calc(6px + env(safe-area-inset-bottom,0px));z-index:30;}
+[hidden]{display:none !important;}
 .tabBtn{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;color:var(--text-secondary);font-size:11px;font-weight:600;padding:6px 2px;cursor:pointer;}
 .tabBtn svg{width:23px;height:23px;}
 .tabBtn.active{color:var(--accent);}
@@ -678,6 +680,7 @@ const memLabel = x=> !x ? "Любая память" : (x>=1024 ? (x/1024)+" ТБ
 let openModels = new Set();
 const GENDERS = [["m","Мужское"],["f","Женское"]];
 const CONDITIONS = ["Новое с биркой","Отличное","Хорошее","Удовлетворительное"];
+const CLOTHES_TYPES = ["Верхняя одежда","Кофты и свитшоты","Футболки и поло","Рубашки","Брюки","Джинсы","Шорты","Костюмы и пиджаки","Обувь","Аксессуары","Платья и юбки"];
 
 let searchesCache = [];
 let searchesLoaded = false;
@@ -776,7 +779,7 @@ function openSearchSheet(kind, id){
   const ex = id ? searchesCache.find(s=>s.id===id) : null;
   sEdit = ex ? JSON.parse(JSON.stringify(ex)) : {
     id:null, kind, name:"", locationId:637640, cityName:"Москва", gender:"m",
-    config: kind==="clothes" ? { brands: defaultBrands() } : { models: defaultModels() },
+    config: kind==="clothes" ? { brands: defaultBrands(), market:false } : { models: defaultModels(), esim:false, market:false },
     params:{ photo:false, desc:true, seller:true }, active:true,
   };
   if(kind==="clothes" && !Array.isArray(sEdit.config.brands)) sEdit.config.brands = [];
@@ -879,6 +882,10 @@ function renderSearchSheet(){
       <input id="srName" type="text" maxlength="60" value="${escHtml(s.name)}" placeholder="${kind==="clothes"?"Например: Мск муж":"Например: Мск 15 Pro"}"></div>
     ${itemsHtml}
     <div class="paramsBox">
+      ${(kind==="iphone" ? [["esim","Присылать iPhone только с eSIM","Если выключено — объявления, где указана только eSIM (без физической SIM), не приходят. Если SIM не указана — приходят."]] : [])
+        .concat([["market","Отмечать цены ниже рыночных","В уведомлении будет строка «💚 Цена ниже рыночной» — по оценке самого Авито."]])
+        .map(([k,t,h])=>`
+      <div class="paramRow"><span>${t}<br><span class="muted small">${h}</span></span><label class="switchCtl"><input type="checkbox" data-cfg="${k}" ${(k==="esim" ? s.config.esim!==false : !!s.config[k])?"checked":""}><span class="track"></span><span class="thumb"></span></label></div>`).join("")}
       ${[["photo","Присылать фото"],["desc","Присылать описание"],["seller","Показывать продавца"]].map(([k,t])=>`
       <div class="paramRow"><span>${t}</span><label class="switchCtl"><input type="checkbox" data-param="${k}" ${s.params[k]?"checked":""}><span class="track"></span><span class="thumb"></span></label></div>`).join("")}
     </div>
@@ -905,6 +912,7 @@ function renderSearchSheet(){
     haptic("selection"); renderSearchSheet(); scheduleSave(); }));
   $("#srName").addEventListener("input", e=>{ s.name = e.target.value; scheduleSave(); });
   $all("[data-param]").forEach(c=> c.addEventListener("change", ()=>{ s.params[c.dataset.param] = c.checked; scheduleSave(); }));
+  $all("[data-cfg]").forEach(c=> c.addEventListener("change", ()=>{ s.config[c.dataset.cfg] = c.checked; haptic("selection"); scheduleSave(); }));
   const act = $("#srActive");
   if(act) act.addEventListener("change", async ()=>{
     try{ const r = await apiJson(`/api/searches/${encodeURIComponent(s.id)}/toggle`,"PATCH"); s.active = r.active; haptic("success");
@@ -933,8 +941,13 @@ function brandRowHtml(b,i,prefix){ return `
       <label class="switchCtl"><input type="checkbox" data-bon="${i}" ${b.enabled?"checked":""}><span class="track"></span><span class="thumb"></span></label>
       <span class="itemName">${escHtml(b.name)}</span>
       <input class="priceIn" type="number" inputmode="numeric" min="0" step="500" data-bprice="${i}" value="${b.maxPrice||""}" placeholder="до ₽">
+      <button type="button" class="miniBtn typeBtn ${(b.types||[]).length?"on":""}" data-btype="${prefix}${i}" title="Категории одежды">${(b.types||[]).length ? (b.types||[]).length : "👕"}</button>
       <button type="button" class="miniBtn" data-balias="${prefix}${i}" title="Варианты написания">✎</button>
       <button type="button" class="miniBtn" data-bdel="${i}" title="Удалить">✕</button>
+    </div>
+    <div class="aliasBox" id="types${prefix}${i}" hidden>
+      <div class="condWrap">${CLOTHES_TYPES.map(t=>`<button type="button" class="condChip ${(b.types||[]).includes(t)?"on":""}" data-btypechip="${i}" data-t="${t}">${(b.types||[]).includes(t)?"✓ ":""}${t}</button>`).join("")}</div>
+      <p class="fieldHint">Какие вещи этого бренда присылать. Ничего не выбрано — все. Категория определяется по названию объявления; если не удалось — объявление приходит.</p>
     </div>
     <div class="aliasBox" id="alias${prefix}${i}" hidden>
       <textarea data-baliases="${i}" rows="2">${escHtml((b.aliases||[]).join(", "))}</textarea>
@@ -955,6 +968,14 @@ function bindBrandRows(wrap){
   wrap.querySelectorAll("[data-bon]").forEach(c=> c.addEventListener("change", ()=>{ s.config.brands[c.dataset.bon].enabled = c.checked; updateItemsCount(); scheduleSave(); renderBrandRows(); }));
   wrap.querySelectorAll("[data-bprice]").forEach(c=> c.addEventListener("input", ()=>{ const v=parseInt(c.value,10); s.config.brands[c.dataset.bprice].maxPrice = v>0?v:null; scheduleSave(); }));
   wrap.querySelectorAll("[data-bprice]").forEach(c=> c.addEventListener("change", ()=> renderBrandRows()));
+  wrap.querySelectorAll("[data-btype]").forEach(btn=> btn.addEventListener("click", ()=>{ const box=$("#types"+btn.dataset.btype); box.hidden=!box.hidden; }));
+  wrap.querySelectorAll("[data-btypechip]").forEach(ch=> ch.addEventListener("click", ()=>{
+    const b = s.config.brands[ch.dataset.btypechip], t = ch.dataset.t;
+    b.types = b.types || [];
+    if(b.types.includes(t)) b.types.splice(b.types.indexOf(t),1); else b.types.push(t);
+    ch.classList.toggle("on", b.types.includes(t)); ch.textContent = (b.types.includes(t)?"✓ ":"") + t;
+    document.querySelectorAll(`[data-btype="s${ch.dataset.btypechip}"],[data-btype="c${ch.dataset.btypechip}"]`).forEach(x=>{ x.textContent = b.types.length ? b.types.length : "👕"; x.classList.toggle("on", b.types.length>0); });
+    haptic("selection"); scheduleSave(); }));
   wrap.querySelectorAll("[data-balias]").forEach(btn=> btn.addEventListener("click", ()=>{ const box=$("#alias"+btn.dataset.balias); box.hidden=!box.hidden; }));
   wrap.querySelectorAll("[data-baliases]").forEach(t=> t.addEventListener("input", ()=>{ s.config.brands[t.dataset.baliases].aliases = t.value.split(",").map(normAlias).filter(Boolean); scheduleSave(); }));
   wrap.querySelectorAll("[data-bdel]").forEach(btn=> btn.addEventListener("click", ()=>{ s.config.brands.splice(Number(btn.dataset.bdel),1); renderSearchSheet(); scheduleSave(); }));

@@ -1129,7 +1129,8 @@ const PROD_NAMES = { iphone:"iPhone", clothes:"Шмот" };
 const DUR_NAMES = { 7:"Неделя", 30:"Месяц", 60:"2 месяца" };
 const fmtDate = iso => iso ? new Date(iso).toLocaleDateString("ru-RU",{day:"numeric",month:"long"}) : "";
 const rub = n => Number(n).toLocaleString("ru-RU") + " ₽";
-let bill = { data:null, product:"iphone", tier:"base", days:30, promo:"", quote:null, payId:null };
+let bill = { data:null, product:"iphone", tier:"base", days:30, promo:"", quote:null, payId:null, payLink:null };
+function openPay(link){ if(tg && tg.openLink) tg.openLink(link); else window.open(link, "_blank"); }
 
 async function renderBilling(){
   const box = $("#billingBlock"); if(!box) return;
@@ -1166,7 +1167,10 @@ async function renderBilling(){
       <button type="button" class="chipBtn" id="promoApply">Применить</button><button type="button" class="chipBtn" id="promoRedeem" title="Промокод на бесплатные дни">Дни</button></div>
       ${q && q.message ? `<p class="fieldHint">${escHtml(q.message)}</p>` : ""}</div>
     <button class="btn btn-primary" id="payBtn" type="button">Оплатить через СБП · ${amount ? rub(amount) : "—"}${q && q.amount < q.price ? ` <s style="opacity:.6;font-weight:600;">${rub(q.price)}</s>` : ""}</button>
-    ${bill.payId ? `<button class="btn btn-outline" id="checkPay" type="button" style="margin-top:8px;">Я оплатил(а) — проверить</button>` : ""}
+    ${bill.payId ? (bill.payLink
+      ? `<button class="btn btn-primary" id="openPay" type="button" style="margin-top:8px;background:var(--success);">💳 Открыть оплату СБП</button>
+         <button class="btn btn-outline" id="checkPay" type="button" style="margin-top:8px;">Я оплатил(а) — проверить</button>`
+      : `<div class="stOk" style="margin-top:8px;">⏳ Готовлю ссылку на оплату…</div>`) : ""}
     <p class="fieldHint" style="margin-top:8px;">Оплата через СБП в приложении вашего банка. Доступ включается сразу после оплаты; срок добавляется к текущей подписке.</p>`;
   box.querySelectorAll("[data-bprod]").forEach(b=> b.onclick = ()=>{ bill.product=b.dataset.bprod; bill.quote=null; haptic("selection"); renderBilling(); });
   box.querySelectorAll("[data-btier]").forEach(b=> b.onclick = ()=>{ bill.tier=b.dataset.btier; bill.quote=null; haptic("selection"); renderBilling(); });
@@ -1183,11 +1187,11 @@ async function renderBilling(){
     const btn = $("#payBtn"); btn.disabled = true;
     try{
       const r = await apiJson("/api/billing/checkout","POST",{ product:bill.product, tier:bill.tier, days:bill.days, promo:bill.promo });
-      bill.payId = r.paymentId;
-      if(tg && tg.openLink) tg.openLink(r.link); else window.open(r.link, "_blank");
+      bill.payId = r.paymentId; bill.payLink = r.link || null;
       renderBilling(); startPayWatch();
     }catch(e){ showToast(e.message); btn.disabled = false; } };
   const chk = $("#checkPay"); if(chk) chk.onclick = ()=> checkPayment(true);
+  const op = $("#openPay"); if(op) op.onclick = ()=> openPay(bill.payLink);
   const tb = $("#trialBtn"); if(tb) tb.onclick = startTrial;
 }
 
@@ -1195,15 +1199,21 @@ async function checkPayment(manual){
   if(!bill.payId) return;
   try{
     const r = await apiJson(`/api/billing/check/${bill.payId}`,"POST");
-    if(r.status==="paid"){ bill.payId=null; haptic("success"); showToast("✅ Оплата получена!"); await loadMe(); renderBilling(); return true; }
-    if(r.status==="failed"){ bill.payId=null; showToast("Оплата не прошла или ссылка истекла"); renderBilling(); return true; }
+    if(r.link && !bill.payLink){ bill.payLink = r.link; haptic("success"); renderBilling(); }
+    if(r.status==="paid"){ bill.payId=null; bill.payLink=null; haptic("success"); showToast("✅ Оплата получена!"); await loadMe(); renderBilling(); return true; }
+    if(r.status==="failed"){ bill.payId=null; bill.payLink=null; showToast(r.error ? "Не удалось создать оплату: "+r.error : "Оплата не прошла или ссылка истекла"); renderBilling(); return true; }
     if(manual) showToast("Оплата ещё не поступила — подождите несколько секунд");
   }catch(e){ if(manual) showToast(e.message); }
   return false;
 }
 function startPayWatch(){
   let n = 0;
-  const t = setInterval(async ()=>{ n++; if(!bill.payId || n>40 || await checkPayment(false)) clearInterval(t); }, 6000);
+  const tick = async ()=>{
+    n++;
+    if(!bill.payId || n>120 || await checkPayment(false)) return;
+    setTimeout(tick, bill.payLink ? 6000 : 1500);      // пока ждём ссылку — чаще
+  };
+  setTimeout(tick, 1500);
 }
 document.addEventListener("visibilitychange", ()=>{ if(!document.hidden && bill.payId) checkPayment(false); });
 
@@ -1257,8 +1267,17 @@ async function renderAdminPrices(){
     box.querySelectorAll("[data-path]").forEach(i=>{ const parts=i.dataset.path.split("."); let o=out; parts.slice(0,-1).forEach(k=>{ o[k]=o[k]||{}; o=o[k]; }); o[parts[parts.length-1]] = i.value; });
     try{ await apiJson("/api/admin/billing","PUT",out); haptic("success"); showToast("Сохранено"); renderAdminPrices(); }catch(e){ showToast(e.message); } };
   $("#testPay").onclick = async ()=>{
-    try{ const r = await apiJson("/api/admin/billing/test","POST"); showToast("Связь есть, открываю ссылку на 1 ₽"); if(tg && tg.openLink) tg.openLink(r.link); else window.open(r.link); }
-    catch(e){ showToast("Ошибка Точки: " + e.message); } };
+    const btn = $("#testPay"); btn.disabled = true; btn.textContent = "⏳ Сервер создаёт ссылку в Точке…";
+    try{
+      const r = await apiJson("/api/admin/billing/test","POST");
+      for(let i=0;i<20;i++){
+        await new Promise(x=>setTimeout(x,1500));
+        const c = await apiJson(`/api/billing/check/${r.paymentId}`,"POST");
+        if(c.link){ btn.disabled=false; btn.textContent="✅ Связь есть — открыть оплату 1 ₽"; btn.onclick=()=>openPay(c.link); haptic("success"); return; }
+        if(c.status==="failed"){ throw new Error(c.error || "ссылка не создана"); }
+      }
+      throw new Error("сервер не ответил за 30 с — проверьте, что рассыльщик запущен с ключом Точки");
+    }catch(e){ btn.disabled=false; btn.textContent="Проверить связь с Точкой (ссылка на 1 ₽)"; showToast("Ошибка: " + e.message); } };
   $("#pcCreate").onclick = async ()=>{
     try{ await apiJson("/api/admin/promos","POST",{ code:$("#pcCode").value, kind:$("#pcKind").value, value:$("#pcValue").value, product:$("#pcProd").value, maxUses:$("#pcMax").value||null, expiresAt:$("#pcExp").value||null });
          haptic("success"); showToast("Промокод создан"); renderAdminPrices(); }catch(e){ showToast(e.message); } };

@@ -1072,6 +1072,7 @@ async function renderStatusPanel(users){
     <div class="stSec">Уведомлений за час · всего ${st.sent_hour_total||0}</div>${sent}
     ${errs?`<div class="stSec">Проблемы с доставкой</div>${errs}`:""}
     <p class="muted small" style="margin-top:8px;">Поисков: ${st.counts?.searches??"?"} · ссылок: ${st.counts?.links??"?"} · рассыльщик работает ${st.uptime_min??"?"} мин
+      ${st.mode ? `<br>режим источников: ${st.mode==="both"?"узкие по городам + широкие":"только широкие"} · диск занят на ${st.disk_pct}%` : ""}
       ${st.raised_skipped!==undefined ? `<br>отсеяно поднятых старых: ${st.raised_skipped} · дублирующих запросов: ${st.hedges} · в очереди на отправку: ${st.send_queue??0}` : ""}</p>
     <button class="btn btn-outline" id="statusRefresh" type="button" style="margin-top:8px;">Обновить</button>
   </div>`;

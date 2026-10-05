@@ -221,10 +221,12 @@ button,input,textarea{font-family:inherit;}
     <p class="muted small viewSub">Город, модели, память и до какой цены — бот пришлёт только подходящее.</p>
     <div id="iphoneList"></div>
     <button class="btn btn-primary" id="addIphoneBtn" type="button">Добавить поиск</button>
+    <button class="btn btn-outline senderBtn" type="button" onclick="openSenderBot()" style="margin-top:8px;">🔔 Включить бота-отправителя (сюда придут объявления)</button>
     <h3 class="sectionTitle">Ссылки на поиск <span class="muted small">— продвинутый режим</span></h3>
     <p class="muted small viewSub">Своя ссылка с Авито, если нужен особый поиск.</p>
     <div id="subsList"></div>
     <button class="btn btn-outline" id="addSubBtn" type="button">Добавить ссылку</button>
+    <button class="btn btn-outline senderBtn" type="button" onclick="openSenderBot()" style="margin-top:8px;">🔔 Включить бота-отправителя (сюда придут объявления)</button>
   </main>
 
   <!-- ---------- Шмот ---------- -->
@@ -233,6 +235,7 @@ button,input,textarea{font-family:inherit;}
     <p class="muted small viewSub">Город, пол и бренды с потолком цены. Бренды можно включать и выключать на лету.</p>
     <div id="clothesList"></div>
     <button class="btn btn-primary" id="addClothesBtn" type="button">Добавить поиск</button>
+    <button class="btn btn-outline senderBtn" type="button" onclick="openSenderBot()" style="margin-top:8px;">🔔 Включить бота-отправителя (сюда придут объявления)</button>
   </main>
 
   <!-- ---------- Информация ---------- -->
@@ -353,6 +356,7 @@ function renderSubs(){
   const list = loadSubs();
   const wrap = $("#subsList");
   const addLinkBtn = $("#addSubBtn"); if(addLinkBtn) addLinkBtn.hidden = isPending();
+  $all(".senderBtn").forEach(b=> b.hidden = !!(meState && meState.deliveryTarget === "head"));
   if(subsLoadFailed && !list.length){
     wrap.innerHTML = `<div class="emptyState">Не удалось загрузить подписки.<br>Ошибка сервера: ${escHtml(subsLoadError||"неизвестна")}</div>`;
     return;
@@ -508,7 +512,7 @@ function confirmDeleteSub(id){
 function closeConfirm(){ $("#confirmBackdrop").hidden=true; $("#confirmModal").hidden=true; }
 
 function openSenderBot(){
-  const url = "https://t.me/" + SENDER_BOT_USERNAME;
+  const url = "https://t.me/" + SENDER_BOT_USERNAME + "?start=go";
   try{ if(tg && tg.openTelegramLink){ tg.openTelegramLink(url); return; } }catch(e){}
   window.open(url, "_blank");
 }
@@ -1191,8 +1195,8 @@ async function renderBilling(){
   const trialHtml = (!a.free && !a.trial.used) ? `
     <div class="statusCard" style="margin:12px 0;">
       <b>🎁 Пробный период — ${st.trial.days} дня бесплатно</b>
-      <p class="fieldHint" style="margin:6px 0 10px;">До ${st.trial.searches} поисков через фильтры iPhone и Шмот (без своих ссылок). Один раз на номер телефона.</p>
-      <button class="btn btn-primary" id="trialBtn" type="button">${a.phoneVerified ? "Включить пробный период" : "Подтвердить номер и включить"}</button>
+      <p class="fieldHint" style="margin:6px 0 10px;">До ${st.trial.searches} поисков через фильтры iPhone и Шмот (без своих ссылок). Один раз на аккаунт.</p>
+      <button class="btn btn-primary" id="trialBtn" type="button">Включить пробный период</button>
     </div>` : "";
   const prices = (st.prices[bill.product]||{})[bill.tier]||{};
   const tierBtns = ["base","pro"].map(t=>{ const T = st.tiers[t]; return `<button type="button" class="segBtn ${bill.tier===t?"on":""}" data-btier="${t}">${T.title}<br><span style="font-weight:600;font-size:11px;opacity:.85;">${T.searches} поисков${T.links?` · ${T.links} ссылки`:""}</span></button>`; }).join("");
@@ -1262,7 +1266,7 @@ document.addEventListener("visibilitychange", ()=>{ if(!document.hidden && bill.
 
 async function startTrial(){
   const a = bill.data.access;
-  if(!a.phoneVerified){
+  if(false && !a.phoneVerified){
     if(!(tg && tg.requestContact)){ showToast("Обновите Telegram, чтобы подтвердить номер"); return; }
     tg.requestContact(async ok=>{
       if(!ok){ showToast("Без номера пробный период включить нельзя"); return; }

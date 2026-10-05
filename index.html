@@ -560,7 +560,7 @@ function renderProfile(){
     <div class="idRow"><span class="muted">Поисков iPhone / Шмот</span><span>${searchesCache.filter(x=>x.kind==="iphone").length} / ${searchesCache.filter(x=>x.kind==="clothes").length}</span></div>
     <div class="idRow"><span class="muted">Ссылок</span><span>${loadSubs().length}</span></div>
 
-    ${meState ? `
+    ${meState && meState.isAdmin ? `
     <div class="paramsBox" style="margin-top:16px;">
       <div class="paramRow">
         <span>Получать выдачу прямо здесь (вместо бота-отправителя)</span>
@@ -1164,7 +1164,7 @@ async function renderBilling(){
     <div class="field"><label>Срок</label><div class="seg">${durBtns}</div></div>
     <div class="field"><label>Промокод</label>
       <div class="rowTools"><input id="promoIn" type="text" placeholder="Если есть" value="${escHtml(bill.promo)}" autocomplete="off" style="text-transform:uppercase;">
-      <button type="button" class="chipBtn" id="promoApply">Применить</button><button type="button" class="chipBtn" id="promoRedeem" title="Промокод на бесплатные дни">Дни</button></div>
+      <button type="button" class="chipBtn" id="promoApply">Применить</button></div>
       ${q && q.message ? `<p class="fieldHint">${escHtml(q.message)}</p>` : ""}</div>
     <button class="btn btn-primary" id="payBtn" type="button">Оплатить через СБП · ${amount ? rub(amount) : "—"}${q && q.amount < q.price ? ` <s style="opacity:.6;font-weight:600;">${rub(q.price)}</s>` : ""}</button>
     ${bill.payId ? (bill.payLink
@@ -1180,10 +1180,7 @@ async function renderBilling(){
   $("#promoApply").onclick = async ()=>{
     try{ bill.quote = await apiJson("/api/billing/quote","POST",{ product:bill.product, tier:bill.tier, days:bill.days, promo:bill.promo }); renderBilling(); }
     catch(e){ showToast(e.message); } };
-  $("#promoRedeem").onclick = async ()=>{
-    if(!bill.promo) return showToast("Введите промокод");
-    try{ const r = await apiJson("/api/billing/redeem","POST",{ code:bill.promo }); haptic("success"); showToast(`🎁 +${r.days} дн. доступа`); await loadMe(); renderBilling(); }
-    catch(e){ showToast(e.message); } };
+
   $("#payBtn").onclick = async ()=>{
     const btn = $("#payBtn"); btn.disabled = true; btn.textContent = "⏳ Подождите несколько секунд…";
     try{
@@ -1256,13 +1253,14 @@ async function renderAdminPrices(){
     <button class="btn btn-outline" id="testPay" type="button" style="margin-top:8px;">Проверить связь с Точкой (ссылка на 1 ₽)</button>
     <h3 class="sectionTitle">Промокоды</h3>
     <div class="statusCard">
-      <div class="rowTools"><input id="pcCode" placeholder="КОД" style="text-transform:uppercase;"><select id="pcKind" class="selIn"><option value="percent">скидка %</option><option value="days">бесплатные дни</option></select></div>
+      <div class="rowTools"><input id="pcCode" placeholder="КОД" style="text-transform:uppercase;"><select id="pcKind" class="selIn"><option value="percent">скидка %</option><option value="days">+ дни к оплате</option></select></div>
       <div class="rowTools"><input id="pcValue" type="number" placeholder="% или дни"><select id="pcProd" class="selIn"><option value="all">iPhone и Шмот</option><option value="iphone">только iPhone</option><option value="clothes">только Шмот</option></select></div>
       <div class="rowTools"><input id="pcMax" type="number" placeholder="Сколько раз (пусто — без лимита)"><input id="pcExp" type="date" title="Действует до"></div>
       <button class="btn btn-primary" id="pcCreate" type="button">Создать промокод</button>
     </div>
-    ${(promos||[]).map(p=>`<div class="idRow"><span><b>${escHtml(p.code)}</b> · ${p.kind==="percent"?`−${p.value}%`:`+${p.value} дн.`} · ${p.product==="all"?"всё":PROD_NAMES[p.product]}<br><span class="muted small">использован ${p.used}${p.max_uses?` из ${p.max_uses}`:""}${p.expires_at?` · до ${fmtDate(p.expires_at)}`:""}</span></span>
-      <label class="switchCtl"><input type="checkbox" data-pcode="${escHtml(p.code)}" ${p.active?"checked":""}><span class="track"></span><span class="thumb"></span></label></div>`).join("") || `<p class="muted small">Промокодов пока нет</p>`}`;
+    ${(promos||[]).map(p=>`<div class="idRow"><span><b>${escHtml(p.code)}</b> · ${p.kind==="percent"?`−${p.value}%`:`+${p.value} дн. к оплате`} · ${p.product==="all"?"всё":PROD_NAMES[p.product]}<br><span class="muted small">использован ${p.used}${p.max_uses?` из ${p.max_uses}`:""}${p.expires_at?` · до ${fmtDate(p.expires_at)}`:""}</span></span>
+      <span style="display:flex;gap:8px;align-items:center;"><label class="switchCtl"><input type="checkbox" data-pcode="${escHtml(p.code)}" ${p.active?"checked":""}><span class="track"></span><span class="thumb"></span></label>
+      <button type="button" class="miniBtn" data-pdel="${escHtml(p.code)}" title="Удалить">🗑</button></span></div>`).join("") || `<p class="muted small">Промокодов пока нет</p>`}`;
   $("#saveBilling").onclick = async ()=>{
     const out = {};
     box.querySelectorAll("[data-path]").forEach(i=>{ const parts=i.dataset.path.split("."); let o=out; parts.slice(0,-1).forEach(k=>{ o[k]=o[k]||{}; o=o[k]; }); o[parts[parts.length-1]] = i.value; });
@@ -1282,6 +1280,9 @@ async function renderAdminPrices(){
   $("#pcCreate").onclick = async ()=>{
     try{ await apiJson("/api/admin/promos","POST",{ code:$("#pcCode").value, kind:$("#pcKind").value, value:$("#pcValue").value, product:$("#pcProd").value, maxUses:$("#pcMax").value||null, expiresAt:$("#pcExp").value||null });
          haptic("success"); showToast("Промокод создан"); renderAdminPrices(); }catch(e){ showToast(e.message); } };
+  box.querySelectorAll("[data-pdel]").forEach(b=> b.onclick = async ()=>{
+    if(!window.confirm(`Удалить промокод ${b.dataset.pdel}? Это нельзя отменить.`)) return;
+    try{ await apiJson(`/api/admin/promos/${encodeURIComponent(b.dataset.pdel)}`,"DELETE"); haptic("warning"); showToast("Промокод удалён"); renderAdminPrices(); }catch(e){ showToast(e.message); } });
   box.querySelectorAll("[data-pcode]").forEach(c=> c.onchange = async ()=>{
     try{ await apiJson(`/api/admin/promos/${encodeURIComponent(c.dataset.pcode)}`,"POST",{ active:c.checked }); showToast(c.checked?"Промокод включён":"Промокод выключен"); }catch(e){ showToast(e.message); } });
 }

@@ -992,7 +992,9 @@ function renderSearchSheet(){
       <p class="fieldHint">Объявления, в названии или описании которых есть эти слова, не придут. Через запятую.</p></div>
     <div class="paramsBox">
       ${(kind==="iphone" ? [["esim","Присылать iPhone только с eSIM","Если выключено — объявления, где указана только eSIM (без физической SIM), не приходят. Если SIM не указана — приходят."]] : [])
-        .concat([["market","Отмечать цены ниже рыночных","В уведомлении будет строка «💚 Цена ниже рыночной» — по оценке самого Авито."]])
+        .concat([kind==="iphone"
+          ? ["market","Сравнивать со средней ценой","Средняя — по объявлениям этой же модели и памяти на Авито за последние 7 дней. В уведомлении: «📊 на 12% ниже средней (средняя 82 000 ₽)»."]
+          : ["market","Отмечать цены ниже рыночных","По оценке самого Авито. В уведомлении: «💚 Цена ниже рыночной»."]])
         .map(([k,t,h])=>`
       <div class="paramRow"><span>${t}<br><span class="muted small">${h}</span></span><label class="switchCtl"><input type="checkbox" data-cfg="${k}" ${(k==="esim" ? s.config.esim!==false : !!s.config[k])?"checked":""}><span class="track"></span><span class="thumb"></span></label></div>`).join("")}
       ${[["photo","Присылать фото"],["desc","Присылать описание"],["seller","Показывать продавца"]].map(([k,t])=>`

@@ -309,6 +309,7 @@ const HEAD_BOT_USERNAME = "PSNparserBot";          /* головной бот �
 const SUPPORT_USERNAME    = "psn_helper_psn";          /* аккаунт поддержки */
 const MAIN_CHANNEL_USERNAME = "PSNapple";         /* основной канал */
 const NEWS_CHANNEL_USERNAME = "PSNparser";        /* новостной канал */
+const DEALS_CHANNEL_USERNAME = "psnparserfree";               /* бесплатный канал выгодных (без @); пусто — строка не показывается */
 
 /* ---------- бэкенд (Cloudflare Worker avito-head-api) ---------- */
 /* После деплоя воркера впишите сюда его адрес, например "https://avito-head-api.ваш-акк.workers.dev" */
@@ -538,6 +539,7 @@ function renderInfo(){
     { icon:iconNews(), title:"Основной канал", sub:"@"+MAIN_CHANNEL_USERNAME, href:"https://t.me/"+MAIN_CHANNEL_USERNAME },
     { icon:iconNews(), title:"Новостной канал", sub:"@"+NEWS_CHANNEL_USERNAME, href:"https://t.me/"+NEWS_CHANNEL_USERNAME },
   ];
+  if(DEALS_CHANNEL_USERNAME) items.splice(1, 0, { icon:iconNews(), title:"🔥 Выгодные iPhone — бесплатно", sub:"@"+DEALS_CHANNEL_USERNAME+" · айфоны на 20–45% ниже рынка", href:"https://t.me/"+DEALS_CHANNEL_USERNAME });
   $("#infoLinks").innerHTML = items.map(it=>`
     <a class="linkRow" href="${it.href}" target="_blank" rel="noopener">
       <span class="ic">${it.icon}</span>

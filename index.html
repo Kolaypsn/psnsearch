@@ -267,6 +267,7 @@ button,input,textarea{font-family:inherit;}
       <button type="button" class="segBtn on" data-aseg="users">Пользователи</button>
       <button type="button" class="segBtn" data-aseg="prices">Цены и промо</button>
       <button type="button" class="segBtn" data-aseg="pays">Платежи</button>
+      <button type="button" class="segBtn" data-aseg="proxy">Прокси</button>
     </div>
     <div id="adminUsersPane">
       <div id="statusPanel"></div>
@@ -275,6 +276,7 @@ button,input,textarea{font-family:inherit;}
     </div>
     <div id="adminPricesPane" hidden></div>
     <div id="adminPaysPane" hidden></div>
+    <div id="adminProxyPane" hidden></div>
   </main>
 
   <nav class="tabbar">
@@ -1188,7 +1190,8 @@ async function renderStatusPanel(users){
              : stale ? `<div class="stBad">🚨 Выдача стоит: последний успешный ответ от Авито ${agoText(st.last_ok_ago)}.</div>`
              : `<div class="stOk">✅ Работает · последний успешный ответ ${agoText(st.last_ok_ago)} · обновлено ${agoText(age)}</div>`;
   const eng = st.engine || {};
-  const proxies = (eng.per_proxy||[]).map(p=>`<div class="idRow"><span>${p.alive?"🟢":"🔴"} ${escHtml(p.proxy)}</span>
+  const pmeta = st.proxy_meta || {};
+  const proxies = (eng.per_proxy||[]).map(p=>`<div class="idRow"><span>${p.alive?"🟢":"🔴"} ${pmeta[p.proxy]&&pmeta[p.proxy].name?"<b>"+escHtml(pmeta[p.proxy].name)+"</b> · ":""}${escHtml(p.proxy)}</span>
       <span class="muted">${p.success_pct??"–"}% · ${p.avg_ok_sec??"–"} с · смен IP ${p.ip_changes}</span></div>`).join("")
     || `<p class="muted small">${eng.error ? "Движок не отвечает: "+escHtml(eng.error) : "нет данных"}</p>`;
   const sources = (st.sources||[]).map(x=>`<div class="idRow"><span>${escHtml(x.name)}</span>
@@ -1389,11 +1392,68 @@ async function renderAdminPays(){
       (pays.map(p=>`<div class="idRow"><span>${p.status==="paid"?"✅":p.status==="failed"?"✖️":"⏳"} ${rub(p.amount)} · ${PROD_NAMES[p.product]} · ${p.tier==="pro"?"Про":"Базовый"} · ${p.days} дн.${p.promo?" · "+escHtml(p.promo):""}<br><span class="muted small">ID ${p.user_id} · ${new Date(p.created_at).toLocaleString("ru-RU")}</span></span></div>`).join("") || `<p class="muted small">Платежей пока нет</p>`);
   }catch(e){ box.innerHTML = `<div class="emptyState">${escHtml(e.message)}</div>`; }
 }
+/* ---------- админ: прокси ---------- */
+let pxTimer = null;
+async function renderAdminProxies(){
+  const box = $("#adminProxyPane");
+  let st = null, jobs = [];
+  try{ st = (await apiJson("/api/admin/status","GET")).status; }catch(e){}
+  try{ jobs = (await apiJson("/api/admin/proxies/jobs","GET")).jobs || []; }catch(e){}
+  const meta = (st && st.proxy_meta) || {};
+  const list = ((st && st.engine && st.engine.per_proxy) || []);
+  const fmtU = ts => ts ? new Date(ts*1000).toLocaleString("ru-RU",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}) : "";
+  const rows = list.map(p=>{
+    const m = meta[p.proxy] || {}; const bad = (p.ok||0)===0 && (p.fail||0)>10;
+    const exp = m.until && m.until*1000 < Date.now();
+    return `<div class="idRow" style="align-items:center;">
+      <span>${bad?"🔴":p.alive?"🟢":"🟡"} <b>${escHtml(m.name||"без названия")}</b><br>
+        <span class="muted small">${escHtml(p.proxy)} · ${p.success_pct??"–"}% · ${p.avg_ok_sec??"–"} с${m.until?` · ${exp?"<b style='color:var(--danger)'>закончилась</b>":"до "+fmtU(m.until)}`:""}</span></span>
+      <button type="button" class="miniBtn" data-pxdel="${escHtml(p.proxy)}" data-pxname="${escHtml(m.name||"")}" title="Удалить">🗑</button></div>`;
+  }).join("") || `<p class="muted small">Состояние ещё не пришло от сервера.</p>`;
+  const jobsHtml = jobs.map(j=>`<div class="idRow"><span>${j.status==="done"?"✅":j.status==="failed"?"❌":"⏳"} ${escHtml(j.title||j.action)}<br>
+      <span class="muted small">${escHtml(j.result || (j.status==="running"?"сервер проверяет прокси (~1 мин)…":"ждёт сервер…"))}</span></span></div>`).join("");
+  const inp = (id,ph,type="text",extra="") => `<input id="${id}" type="${type}" placeholder="${ph}" autocomplete="off" ${extra}
+      style="width:100%;border:1px solid var(--border);background:var(--surface-2);color:var(--text);border-radius:10px;padding:10px 11px;font-size:14px;margin-bottom:8px;">`;
+  box.innerHTML = `
+    <h3 class="sectionTitle" style="margin-top:0;">Прокси в работе (${list.length})</h3>
+    <div class="statusCard">${rows}</div>
+    <h3 class="sectionTitle">Добавить прокси</h3>
+    <div class="statusCard">
+      ${inp("pxName","Название (например: Алексей 7)")}
+      ${inp("pxHost","Адрес (IP или домен)")}
+      ${inp("pxPort","Порт","number",'inputmode="numeric"')}
+      ${inp("pxLogin","Логин")}
+      ${inp("pxPass","Пароль")}
+      <select id="pxType" class="selIn" style="width:100%;margin-bottom:8px;"><option value="auto">Тип: определить автоматически</option><option value="socks">SOCKS5</option><option value="http">HTTP</option></select>
+      ${inp("pxChange","Ссылка смены IP (если есть)")}
+      <label class="muted small">Оплачена до</label>
+      ${inp("pxUntil","","datetime-local")}
+      <button class="btn btn-primary" id="pxAdd" type="button">Проверить и добавить</button>
+      <p class="fieldHint">Сервер сделает 3 запроса к Авито через прокси и добавит её, только если прошли 2 из 3. Движок перезапустится (~20 с), итог появится ниже и придёт в бот.</p>
+    </div>
+    ${jobs.length?`<h3 class="sectionTitle">Последние действия</h3><div class="statusCard">${jobsHtml}</div>`:""}`;
+  $("#pxAdd").onclick = async ()=>{
+    const v = id => ($("#"+id).value||"").trim();
+    try{
+      await apiJson("/api/admin/proxies","POST",{ name:v("pxName"), host:v("pxHost"), port:v("pxPort"), login:v("pxLogin"), password:v("pxPass"),
+        type:$("#pxType").value, changeUrl:v("pxChange"), until: v("pxUntil") ? new Date(v("pxUntil")).toISOString() : null });
+      haptic("success"); showToast("Отправлено на сервер — проверка ~1 мин"); renderAdminProxies();
+    }catch(e){ showToast(e.message); } };
+  box.querySelectorAll("[data-pxdel]").forEach(b=> b.onclick = async ()=>{
+    if(!window.confirm(`Удалить прокси ${b.dataset.pxname||b.dataset.pxdel}?`)) return;
+    try{ await apiJson("/api/admin/proxies/remove","POST",{ hp:b.dataset.pxdel, name:b.dataset.pxname }); haptic("warning"); showToast("Удаляю — ~30 с"); renderAdminProxies(); }
+    catch(e){ showToast(e.message); } });
+  clearTimeout(pxTimer);
+  if(jobs.some(j=>j.status==="new"||j.status==="running")) pxTimer = setTimeout(()=>{ if(!$("#adminProxyPane").hidden) renderAdminProxies(); }, 8000);
+}
+
 $all("[data-aseg]").forEach(b=> b.addEventListener("click", ()=>{
   $all("[data-aseg]").forEach(x=> x.classList.toggle("on", x===b));
   $("#adminUsersPane").hidden = b.dataset.aseg!=="users";
   $("#adminPricesPane").hidden = b.dataset.aseg!=="prices";
   $("#adminPaysPane").hidden = b.dataset.aseg!=="pays";
+  $("#adminProxyPane").hidden = b.dataset.aseg!=="proxy";
+  if(b.dataset.aseg==="proxy") renderAdminProxies();
   if(b.dataset.aseg==="prices") renderAdminPrices();
   if(b.dataset.aseg==="pays") renderAdminPays();
 }));

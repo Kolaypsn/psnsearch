@@ -179,6 +179,8 @@ button,input,textarea{font-family:inherit;}
 .stOk{background:rgba(52,168,83,.12);color:#1e7e34;}
 .stBad{background:rgba(220,53,69,.12);color:#b02a37;}
 .stSec{font-size:12.5px;font-weight:800;text-transform:uppercase;letter-spacing:.03em;color:var(--text-secondary);margin:12px 0 4px;}
+.senderWarn{background:#FFF4E5;color:#7A4B00;border:1px solid #F5C77E;border-radius:14px;padding:12px 14px;margin:0 0 12px;font-size:14px;line-height:1.4;}
+@media (prefers-color-scheme: dark){ .senderWarn{background:#3A2A10;color:#F5D7A1;border-color:#7A5A20;} }
 .userCard{background:var(--surface);border:1px solid var(--border);border-radius:16px;margin-bottom:10px;overflow:hidden;box-shadow:var(--shadow);}
 .userHead{display:flex;align-items:center;gap:12px;width:100%;border:none;background:none;color:var(--text);padding:12px 14px;cursor:pointer;}
 .userBody{padding:0 14px 14px;border-top:1px solid var(--border);}
@@ -220,13 +222,14 @@ button,input,textarea{font-family:inherit;}
     <h2 class="viewTitle">iPhone</h2>
     <p class="muted small viewSub">Город, модели, память и до какой цены — бот пришлёт только подходящее.</p>
     <div id="iphoneList"></div>
+<div class="senderWarn" hidden>⚠️ <b>Уведомления выключены</b> — бот не может присылать вам объявления. Разрешите ему писать вам.<button class="btn btn-primary" type="button" onclick="enableNotify(true)" style="margin-top:10px;">🔔 Включить уведомления</button></div>
     <button class="btn btn-primary" id="addIphoneBtn" type="button">Добавить поиск</button>
-    <button class="btn btn-outline senderBtn" type="button" onclick="openSenderBot()" style="margin-top:8px;">🔔 Включить бота-отправителя (сюда придут объявления)</button>
+    <button class="btn btn-outline senderBtn" type="button" onclick="enableNotify(true)" style="margin-top:8px;">🔔 Включить уведомления</button>
     <h3 class="sectionTitle">Ссылки на поиск <span class="muted small">— продвинутый режим</span></h3>
     <p class="muted small viewSub">Своя ссылка с Авито, если нужен особый поиск.</p>
     <div id="subsList"></div>
     <button class="btn btn-outline" id="addSubBtn" type="button">Добавить ссылку</button>
-    <button class="btn btn-outline senderBtn" type="button" onclick="openSenderBot()" style="margin-top:8px;">🔔 Включить бота-отправителя (сюда придут объявления)</button>
+    <button class="btn btn-outline senderBtn" type="button" onclick="enableNotify(true)" style="margin-top:8px;">🔔 Включить уведомления</button>
   </main>
 
   <!-- ---------- Шмот ---------- -->
@@ -234,8 +237,9 @@ button,input,textarea{font-family:inherit;}
     <h2 class="viewTitle">Шмот</h2>
     <p class="muted small viewSub">Город, пол и бренды с потолком цены. Бренды можно включать и выключать на лету.</p>
     <div id="clothesList"></div>
+<div class="senderWarn" hidden>⚠️ <b>Уведомления выключены</b> — бот не может присылать вам объявления. Разрешите ему писать вам.<button class="btn btn-primary" type="button" onclick="enableNotify(true)" style="margin-top:10px;">🔔 Включить уведомления</button></div>
     <button class="btn btn-primary" id="addClothesBtn" type="button">Добавить поиск</button>
-    <button class="btn btn-outline senderBtn" type="button" onclick="openSenderBot()" style="margin-top:8px;">🔔 Включить бота-отправителя (сюда придут объявления)</button>
+    <button class="btn btn-outline senderBtn" type="button" onclick="enableNotify(true)" style="margin-top:8px;">🔔 Включить уведомления</button>
   </main>
 
   <!-- ---------- Информация ---------- -->
@@ -294,7 +298,8 @@ const $=s=>document.querySelector(s), $all=s=>Array.from(document.querySelectorA
 const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
 
 /* ---------- плейсхолдеры — впишите свои значения перед публикацией ---------- */
-const SENDER_BOT_USERNAME = "psn_senderbot";       /* бот, который будет рассылать саму выдачу объявлений */
+const SENDER_BOT_USERNAME = "psn_senderbot";       /* старый бот-отправитель (с 06.10 не используется) */
+const HEAD_BOT_USERNAME = "PSNparserBot";          /* головной бот — с 06.10 в него приходит вся выдача */
 const SUPPORT_USERNAME    = "psn_helper_psn";          /* аккаунт поддержки */
 const MAIN_CHANNEL_USERNAME = "PSNapple";         /* основной канал */
 const NEWS_CHANNEL_USERNAME = "PSNparser";        /* новостной канал */
@@ -356,7 +361,9 @@ function renderSubs(){
   const list = loadSubs();
   const wrap = $("#subsList");
   const addLinkBtn = $("#addSubBtn"); if(addLinkBtn) addLinkBtn.hidden = isPending();
-  $all(".senderBtn").forEach(b=> b.hidden = !!(meState && meState.deliveryTarget === "head"));
+  $all(".senderBtn").forEach(b=> b.hidden = !!(meState && meState.senderOk === true));
+  // бот не может писать человеку (Telegram ответил «chat not found») — крупное предупреждение
+  $all(".senderWarn").forEach(b=> b.hidden = !(meState && meState.senderOk === false));
   if(subsLoadFailed && !list.length){
     wrap.innerHTML = `<div class="emptyState">Не удалось загрузить подписки.<br>Ошибка сервера: ${escHtml(subsLoadError||"неизвестна")}</div>`;
     return;
@@ -422,15 +429,14 @@ function openSubSheet(id){
       ${id ? (sub.active ? "Остановить поиск" : "Запустить поиск") : "Создать подписку"}
     </button>
     <div class="gap8"></div>
-    <button class="btn btn-outline" id="subSenderBtn" type="button">Перейти в бота отправителя</button>
-    <p class="senderHint">Перед первым запуском не забудьте <a href="#" id="subSenderLink">запустить бота отправителя</a> — именно он присылает саму выдачу объявлений.</p>
+    <button class="btn btn-outline" id="subSenderBtn" type="button">🔔 Включить уведомления</button>
+    <p class="senderHint">Объявления приходят в этого бота — разрешите ему писать вам, если ещё не разрешали.</p>
     ${id ? `<button class="btn-danger-text" id="subDeleteBtn" type="button">Удалить подписку</button>` : ""}
   `;
   $("#subBackdrop").hidden=false; $("#subSheet").hidden=false;
   $("#subCloseBtn").addEventListener("click", closeSubSheet);
   $("#subBackdrop").addEventListener("click", closeSubSheet);
-  $("#subSenderBtn").addEventListener("click", openSenderBot);
-  $("#subSenderLink").addEventListener("click", e=>{ e.preventDefault(); openSenderBot(); });
+  $("#subSenderBtn").addEventListener("click", ()=> enableNotify(true));
   $("#subPrimaryBtn").addEventListener("click", ()=> id ? toggleActive(id) : createSub());
   if(id) $("#subDeleteBtn").addEventListener("click", ()=> confirmDeleteSub(id));
 }
@@ -568,7 +574,7 @@ function renderProfile(){
     <div class="idRow"><span class="muted">Поисков iPhone / Шмот</span><span>${searchesCache.filter(x=>x.kind==="iphone").length} / ${searchesCache.filter(x=>x.kind==="clothes").length}</span></div>
     <div class="idRow"><span class="muted">Ссылок</span><span>${loadSubs().length}</span></div>
 
-    ${meState && meState.isAdmin ? `
+    ${false ? `
     <div class="paramsBox" style="margin-top:16px;">
       <div class="paramRow">
         <span>Получать выдачу прямо здесь (вместо бота-отправителя)</span>
@@ -599,6 +605,25 @@ function renderProfile(){
 }
 
 /* ---------- мой профиль с сервера (кто я, куда мне идёт выдача, админ ли я) ---------- */
+function enableNotify(manual){
+  /* Разрешение боту писать человеку — как «Старт», но прямо в мини-аппе (нужно тем, кто открыл приложение по ссылке).
+     Спрашиваем при каждом открытии, пока не разрешат; после «Разрешить» бот присылает «Уведомления включены». */
+  try{
+    if(!tg || !tg.requestWriteAccess){ if(manual) openHeadBot(); return; }
+    if(!manual && meState && meState.senderOk === true) return;
+    tg.requestWriteAccess(async allowed=>{
+      if(!allowed){ if(manual) showToast("Без разрешения бот не сможет присылать объявления"); return; }
+      try{ const r = await apiJson("/api/me/notify-ok","POST"); if(r.ok){ haptic("success"); if(manual) showToast("🔔 Уведомления включены"); await loadMe(); } }catch(e){}
+    });
+  }catch(e){ if(manual) openHeadBot(); }
+}
+function openHeadBot(){
+  const url = "https://t.me/" + HEAD_BOT_USERNAME + "?start=go";
+  try{ if(tg && tg.openTelegramLink){ tg.openTelegramLink(url); return; } }catch(e){}
+  window.open(url, "_blank");
+}
+setTimeout(()=> enableNotify(false), 1500);
+
 async function loadMe(){
   try{
     const res = await apiJson("/api/me","GET");
@@ -692,12 +717,13 @@ function renderAdminUsersOnly(users){
             <div class="profileName" style="font-size:15px;">${escHtml(name)}${u.isAdmin?" · админ":""}</div>
             <div class="profileMeta">${u.username?"@"+escHtml(u.username)+" · ":""}ID ${u.telegramId}</div>
             <div class="profileMeta" style="font-weight:700;color:${ok?"var(--success)":"var(--warning)"};">${escHtml(accText)}</div>
+            ${u.senderOk===false ? `<div class="profileMeta" style="font-weight:700;color:var(--danger);">⚠️ бот не может ему писать (не включил уведомления)</div>` : ""}
           </div>
           <svg class="mhChev ${open?"open":""}" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
         </button>
         <div class="userBody" ${open?"":"hidden"}>
           <div class="idRow"><span class="muted">Телефон</span><span>${u.phone?escHtml(u.phone):"не подтверждён"}</span></div>
-          <div class="idRow"><span class="muted">Выдача</span><span>${u.deliveryTarget==="head"?"этот бот":"бот-отправитель"}</span></div>
+          <div class="idRow"><span class="muted">Уведомления</span><span style="font-weight:700;color:${u.senderOk===false?"var(--danger)":u.senderOk?"var(--success)":"var(--text-secondary)"};">${u.senderOk===false?"ВЫКЛЮЧЕНЫ":u.senderOk?"включены":"пока неизвестно"}</span></div>
           ${a.trial && a.trial.used && !a.trial.active ? `<div class="idRow"><span class="muted">Пробный</span><span>уже использован</span></div>` : ""}
           <div class="stSec">Поиски (${srch.length}) и ссылки (${subs.length})</div>
           ${srchHtml + linksHtml || `<p class="muted small" style="margin:4px 0 8px;">Поисков и ссылок нет</p>`}

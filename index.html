@@ -150,6 +150,10 @@ button,input,textarea{font-family:inherit;}
 .field .memIn,.memIn{width:70px;flex:none;border:1px solid var(--border);background:var(--surface-2);color:var(--text);border-radius:8px;padding:7px 4px;font-size:13px;outline:none;}
 .modelName{white-space:normal;line-height:1.15;font-size:13.5px;}
 #modelRows .priceIn{width:104px;}
+.priceIn.half,#modelRows .priceIn.half{width:74px;padding:7px 6px;}
+.priceRow{display:flex;align-items:center;gap:8px;padding:0 0 10px 62px;border-bottom:1px solid var(--border);margin-top:-4px;}
+.priceRow .priceIn.half{width:96px;}
+.priceRow.dim{opacity:.55;}
 #modelRows .itemRow{gap:6px;}
 .modelGroup{border-bottom:1px solid var(--border);}
 .modelHead{display:flex;align-items:center;gap:8px;width:100%;border:none;background:none;color:var(--text);padding:12px 0;text-align:left;cursor:pointer;}
@@ -980,6 +984,10 @@ function renderSearchSheet(){
     <div class="field"><label>Название (необязательно)</label>
       <input id="srName" type="text" maxlength="60" value="${escHtml(s.name)}" placeholder="${kind==="clothes"?"Например: Мск муж":"Например: Мск 15 Pro"}"></div>
     ${itemsHtml}
+    <div class="field" style="margin-top:14px;"><label>Слова-исключения</label>
+      <input id="stopWordsIn" type="text" autocomplete="off" placeholder="например: витрина, ремонт, icloud, копия" value="${escHtml((s.config.stopWords||[]).join(", "))}"
+        style="width:100%;border:1px solid var(--border);background:var(--surface-2);color:var(--text);border-radius:12px;padding:11px 12px;font-size:14px;">
+      <p class="fieldHint">Объявления, в названии или описании которых есть эти слова, не придут. Через запятую.</p></div>
     <div class="paramsBox">
       ${(kind==="iphone" ? [["esim","Присылать iPhone только с eSIM","Если выключено — объявления, где указана только eSIM (без физической SIM), не приходят. Если SIM не указана — приходят."]] : [])
         .concat([["market","Отмечать цены ниже рыночных","В уведомлении будет строка «💚 Цена ниже рыночной» — по оценке самого Авито."]])
@@ -1012,6 +1020,7 @@ function renderSearchSheet(){
   $("#srName").addEventListener("input", e=>{ s.name = e.target.value; scheduleSave(); });
   $all("[data-param]").forEach(c=> c.addEventListener("change", ()=>{ s.params[c.dataset.param] = c.checked; scheduleSave(); }));
   $all("[data-cfg]").forEach(c=> c.addEventListener("change", ()=>{ s.config[c.dataset.cfg] = c.checked; haptic("selection"); scheduleSave(); }));
+  const sw_ = $("#stopWordsIn"); if(sw_) sw_.addEventListener("input", ()=>{ s.config.stopWords = sw_.value.split(",").map(x=>x.trim()).filter(x=>x.length>=2).slice(0,40); scheduleSave(); });
   const act = $("#srActive");
   if(act) act.addEventListener("change", async ()=>{
     try{ const r = await apiJson(`/api/searches/${encodeURIComponent(s.id)}/toggle`,"PATCH"); s.active = r.active; haptic("success");
@@ -1039,11 +1048,14 @@ function brandRowHtml(b,i,prefix){ return `
     <div class="itemRow ${b.enabled?"on":""}">
       <label class="switchCtl"><input type="checkbox" data-bon="${i}" ${b.enabled?"checked":""}><span class="track"></span><span class="thumb"></span></label>
       <span class="itemName">${escHtml(b.name)}</span>
-      <input class="priceIn" type="number" inputmode="numeric" min="0" step="500" data-bprice="${i}" value="${b.maxPrice||""}" placeholder="до ₽">
       <button type="button" class="miniBtn typeBtn ${(b.types||[]).length?"on":""}" data-btype="${prefix}${i}" title="Категории одежды">${(b.types||[]).length ? (b.types||[]).length : "👕"}</button>
       <button type="button" class="miniBtn" data-balias="${prefix}${i}" title="Варианты написания">✎</button>
       <button type="button" class="miniBtn" data-bdel="${i}" title="Удалить">✕</button>
     </div>
+    <div class="priceRow ${b.enabled?"":"dim"}"><span class="muted small">цена</span>
+      <input class="priceIn half" type="number" inputmode="numeric" min="0" step="500" data-bmin="${i}" value="${b.minPrice||""}" placeholder="от ₽">
+      <span class="muted">–</span>
+      <input class="priceIn half" type="number" inputmode="numeric" min="0" step="500" data-bprice="${i}" value="${b.maxPrice||""}" placeholder="до ₽"></div>
     <div class="aliasBox" id="types${prefix}${i}" hidden>
       <div class="condWrap">${CLOTHES_TYPES.map(t=>`<button type="button" class="condChip ${(b.types||[]).includes(t)?"on":""}" data-btypechip="${i}" data-t="${t}">${(b.types||[]).includes(t)?"✓ ":""}${t}</button>`).join("")}</div>
       <p class="fieldHint">Какие вещи этого бренда присылать. Ничего не выбрано — все. Категория определяется по названию объявления; если не удалось — объявление приходит.</p>
@@ -1066,6 +1078,7 @@ function bindBrandRows(wrap){
   const s = sEdit;
   wrap.querySelectorAll("[data-bon]").forEach(c=> c.addEventListener("change", ()=>{ s.config.brands[c.dataset.bon].enabled = c.checked; updateItemsCount(); scheduleSave(); renderBrandRows(); }));
   wrap.querySelectorAll("[data-bprice]").forEach(c=> c.addEventListener("input", ()=>{ const v=parseInt(c.value,10); s.config.brands[c.dataset.bprice].maxPrice = v>0?v:null; scheduleSave(); }));
+  wrap.querySelectorAll("[data-bmin]").forEach(c=> c.addEventListener("input", ()=>{ const v=parseInt(c.value,10); s.config.brands[c.dataset.bmin].minPrice = v>0?v:null; scheduleSave(); }));
   wrap.querySelectorAll("[data-bprice]").forEach(c=> c.addEventListener("change", ()=> renderBrandRows()));
   wrap.querySelectorAll("[data-btype]").forEach(btn=> btn.addEventListener("click", ()=>{ const box=$("#types"+btn.dataset.btype); box.hidden=!box.hidden; }));
   wrap.querySelectorAll("[data-btypechip]").forEach(ch=> ch.addEventListener("click", ()=>{
@@ -1107,7 +1120,7 @@ function renderModelRows(){
   wrap.innerHTML = shown.map(g=>{
     const on = g.rows.filter(r=>r.m.enabled).length;
     const open = openModels.has(g.model) || (f && shown.length<=3);
-    const summary = on ? g.rows.filter(r=>r.m.enabled).map(r=> memLabel(r.m.memory).replace("Любая память","любая") + (r.m.maxPrice? " ≤ "+Number(r.m.maxPrice).toLocaleString("ru-RU"):"")).join(", ") : "выключена";
+    const summary = on ? g.rows.filter(r=>r.m.enabled).map(r=> memLabel(r.m.memory).replace("Любая память","любая") + (r.m.minPrice? " от "+Number(r.m.minPrice).toLocaleString("ru-RU"):"") + (r.m.maxPrice? " до "+Number(r.m.maxPrice).toLocaleString("ru-RU"):"")).join(", ") : "выключена";
     return `<div class="modelGroup ${on?"on":""}">
       <button type="button" class="modelHead" data-mgroup="${escHtml(g.model)}">
         <span class="mhName">iPhone ${escHtml(g.model)}</span>
@@ -1119,7 +1132,8 @@ function renderModelRows(){
           <div class="itemRow ${m.enabled?"on":""}">
             <label class="switchCtl"><input type="checkbox" data-mon="${i}" ${m.enabled?"checked":""}><span class="track"></span><span class="thumb"></span></label>
             <span class="itemName modelName">${memLabel(m.memory)}</span>
-            <input class="priceIn" type="number" inputmode="numeric" min="0" step="1000" data-mprice="${i}" value="${m.maxPrice||""}" placeholder="до ₽">
+            <input class="priceIn half" type="number" inputmode="numeric" min="0" step="1000" data-mmin="${i}" value="${m.minPrice||""}" placeholder="от ₽">
+            <input class="priceIn half" type="number" inputmode="numeric" min="0" step="1000" data-mprice="${i}" value="${m.maxPrice||""}" placeholder="до ₽">
           </div>`).join("")}
       </div>
     </div>`;
@@ -1131,6 +1145,10 @@ function renderModelRows(){
     if(v>0 && !s.config.models[c.dataset.mprice].enabled){ s.config.models[c.dataset.mprice].enabled=true; const sw=wrap.querySelector(`[data-mon="${c.dataset.mprice}"]`); if(sw){ sw.checked=true; sw.closest(".itemRow").classList.add("on"); } updateItemsCount(); }
     scheduleSave(); }));
   wrap.querySelectorAll("[data-mprice]").forEach(c=> c.addEventListener("blur", renderModelRowsKeepFocus));
+  wrap.querySelectorAll("[data-mmin]").forEach(c=> c.addEventListener("input", ()=>{ const v=parseInt(c.value,10); s.config.models[c.dataset.mmin].minPrice=v>0?v:null;
+    if(v>0 && !s.config.models[c.dataset.mmin].enabled){ s.config.models[c.dataset.mmin].enabled=true; const sw=wrap.querySelector(`[data-mon="${c.dataset.mmin}"]`); if(sw){ sw.checked=true; sw.closest(".itemRow").classList.add("on"); } updateItemsCount(); }
+    scheduleSave(); }));
+  wrap.querySelectorAll("[data-mmin]").forEach(c=> c.addEventListener("blur", renderModelRowsKeepFocus));
   const flt = $("#modelFilter"); if(flt && !flt.dataset.bound){ flt.dataset.bound="1"; flt.addEventListener("input", renderModelRows); }
   const on = $("#mAllOn"); if(on && !on.dataset.bound){ on.dataset.bound="1"; on.addEventListener("click", ()=>{ s.config.models.forEach(m=>{ if(!m.memory) m.enabled=true; }); renderSearchSheet(); scheduleSave(); }); }
   const off = $("#mAllOff"); if(off && !off.dataset.bound){ off.dataset.bound="1"; off.addEventListener("click", ()=>{ s.config.models.forEach(m=>m.enabled=false); renderSearchSheet(); scheduleSave(); }); }

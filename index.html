@@ -249,6 +249,8 @@ button,input,textarea{font-family:inherit;}
   <!-- ---------- Информация ---------- -->
   <main class="view" id="infoView" hidden>
     <h2 class="viewTitle">Информация</h2>
+    <h3 class="sectionTitle" style="margin-top:0;">Уведомления</h3>
+    <div id="notifyBox" class="statusCard" style="margin-bottom:14px;"></div>
     <div id="infoLinks"></div>
   </main>
 
@@ -534,7 +536,36 @@ function openSenderBot(){
 $("#addSubBtn").addEventListener("click", ()=> openSubSheet(null));
 
 /* ---------- вкладка «Информация» ---------- */
+function renderNotify(){
+  const box = $("#notifyBox"); if(!box) return;
+  const u = meState || {};
+  const mode = u.quietMode || "silent", qf = u.quietFrom ?? 0, qt = u.quietTo ?? 8;
+  const paused = u.pauseUntil && Date.parse(u.pauseUntil) > Date.now();
+  const hours = sel => Array.from({length:24},(_,h)=>`<option value="${h}" ${h===sel?"selected":""}>${String(h).padStart(2,"0")}:00</option>`).join("");
+  box.innerHTML = `
+    ${paused ? `<div class="stOk" style="margin-bottom:10px;">⏸ Пауза до ${new Date(u.pauseUntil).toLocaleString("ru-RU",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}
+       <button type="button" class="chipBtn" id="nbResume" style="margin-left:8px;">▶️ Продолжить</button></div>` : ""}
+    <div class="field" style="margin-bottom:8px;"><label>🌙 Ночью</label>
+      <select id="nbMode" class="selIn" style="width:100%;">
+        <option value="silent" ${mode==="silent"?"selected":""}>Присылать без звука</option>
+        <option value="off" ${mode==="off"?"selected":""}>Не присылать — утром одна сводка</option>
+        <option value="none" ${mode==="none"?"selected":""}>Как днём, со звуком</option>
+      </select></div>
+    <div class="rowTools" ${mode==="none"?"hidden":""}><span class="muted small">с</span><select id="nbFrom" class="selIn">${hours(qf)}</select>
+      <span class="muted small">до</span><select id="nbTo" class="selIn">${hours(qt)}</select></div>
+    <p class="fieldHint" style="margin-top:8px;">Время московское. Поставить паузу можно кнопкой «⏸ Пауза» под любым объявлением.</p>`;
+  const save = async (extra)=>{
+    try{
+      const r = await apiJson("/api/me/quiet","PUT",{ quietMode:$("#nbMode").value, quietFrom:+($("#nbFrom")||{value:qf}).value, quietTo:+($("#nbTo")||{value:qt}).value, ...(extra||{}) });
+      meState = { ...meState, ...r.user }; haptic("selection"); showToast("Сохранено"); renderNotify();
+    }catch(e){ showToast(e.message); } };
+  $("#nbMode").onchange = ()=> save();
+  if($("#nbFrom")) $("#nbFrom").onchange = ()=> save();
+  if($("#nbTo")) $("#nbTo").onchange = ()=> save();
+  const rs = $("#nbResume"); if(rs) rs.onclick = ()=> save({ pauseUntil:null });
+}
 function renderInfo(){
+  renderNotify();
   const items = [
     { icon:iconSupport(), title:"Поддержка", sub:"@"+SUPPORT_USERNAME, href:"https://t.me/"+SUPPORT_USERNAME },
     { icon:iconNews(), title:"Основной канал", sub:"@"+MAIN_CHANNEL_USERNAME, href:"https://t.me/"+MAIN_CHANNEL_USERNAME },

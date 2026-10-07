@@ -997,9 +997,10 @@ function renderSearchSheet(){
       ${(kind==="iphone" ? [["esim","Присылать iPhone только с eSIM","Если выключено — объявления, где указана только eSIM (без физической SIM), не приходят. Если SIM не указана — приходят."]] : [])
         .concat([kind==="iphone"
           ? ["market","Сравнивать со средней ценой","Средняя — по объявлениям этой же модели и памяти на Авито за последние 7 дней. В уведомлении: «📊 на 12% ниже средней (средняя 82 000 ₽)»."]
-          : ["market","Сравнивать со средней ценой","Средняя — по объявлениям этого же бренда и типа вещи (новые и б/у отдельно) на Авито за последние 7 дней. В уведомлении: «📊 на 25% ниже средней (средняя 12 000 ₽ · куртки, б/у)»."]])
+          : ["market","Сравнивать со средней ценой","Средняя — по объявлениям этого же бренда и типа вещи (новые и б/у отдельно) на Авито за последние 7 дней, без магазинов. В уведомлении: «📊 на 25% ниже средней (средняя 12 000 ₽ · куртки, б/у)»."]])
+        .concat(kind==="clothes" ? [["replicaMark","Помечать возможные реплики","Если вещь в 3+ раза дешевле средней по бренду — в уведомлении будет пометка «⚠️ подозрительно дёшево, возможна реплика». Объявление всё равно придёт."]] : [])
         .map(([k,t,h])=>`
-      <div class="paramRow"><span>${t}<br><span class="muted small">${h}</span></span><label class="switchCtl"><input type="checkbox" data-cfg="${k}" ${(k==="esim" ? s.config.esim!==false : !!s.config[k])?"checked":""}><span class="track"></span><span class="thumb"></span></label></div>`).join("")}
+      <div class="paramRow"><span>${t}<br><span class="muted small">${h}</span></span><label class="switchCtl"><input type="checkbox" data-cfg="${k}" ${((k==="esim" || k==="replicaMark") ? s.config[k]!==false : !!s.config[k])?"checked":""}><span class="track"></span><span class="thumb"></span></label></div>`).join("")}
       ${[["photo","Присылать фото"],["desc","Присылать описание"],["seller","Показывать продавца"]].map(([k,t])=>`
       <div class="paramRow"><span>${t}</span><label class="switchCtl"><input type="checkbox" data-param="${k}" ${s.params[k]?"checked":""}><span class="track"></span><span class="thumb"></span></label></div>`).join("")}
     </div>
@@ -1238,6 +1239,13 @@ async function renderBilling(){
   try{ bill.data = await apiJson("/api/billing","GET"); }
   catch(e){ box.innerHTML = `<div class="emptyState">Не удалось загрузить подписку: ${escHtml(e.message)}</div>`; return; }
   const { settings:st, access:a } = bill.data;
+  /* личный промокод после пробного — подставляем сам и сразу считаем цену */
+  if(bill.data.myPromo && !bill.promo && !bill.promoAuto){
+    bill.promo = bill.data.myPromo.code; bill.promoAuto = true;
+    apiJson("/api/billing/quote","POST",{ product:bill.product, tier:bill.tier, days:bill.days, promo:bill.promo })
+      .then(q=>{ bill.quote = q; renderBilling(); }).catch(()=>{});
+  }
+  const ref = bill.data.ref;
   if(!st.durations.includes(bill.days)) bill.days = st.durations[1] || st.durations[0];
   const status = a.free ? `<div class="stOk">✅ ${a.admin ? "Администратор" : "Сотрудник"} — полный доступ без оплаты</div>`
     : Object.keys(PROD_NAMES).map(p=>{
@@ -1273,7 +1281,17 @@ async function renderBilling(){
          <button class="btn btn-outline" id="checkPay" type="button" style="margin-top:8px;">Я оплатил(а) — проверить</button>`
       : `<div class="stOk" style="margin-top:8px;">⏳ Готовлю оплату — подождите несколько секунд…</div>`) : ""}
     ${bill.payId && bill.payLink ? `<p class="fieldHint" style="margin-top:6px;">После оплаты в банке доступ включится сам через несколько секунд — эту страницу можно не закрывать.</p>` : ""}
-    <p class="fieldHint" style="margin-top:8px;">Оплата через СБП в приложении вашего банка. Доступ включается сразу после оплаты; срок добавляется к текущей подписке.</p>`;
+    <p class="fieldHint" style="margin-top:8px;">Оплата через СБП в приложении вашего банка. Доступ включается сразу после оплаты; срок добавляется к текущей подписке.</p>
+    ${bill.data.myPromo ? `<p class="fieldHint">🎁 Ваш личный промокод ${escHtml(bill.data.myPromo.code)} (−${bill.data.myPromo.value}%) действует до ${fmtDate(bill.data.myPromo.expires_at)}.</p>` : ""}
+    ${ref ? `<h3 class="sectionTitle">Приведи друга</h3>
+    <div class="statusCard">
+      <b>🎁 +${ref.days} дня вам и другу</b>
+      <p class="fieldHint" style="margin:6px 0 10px;">Отправьте другу ссылку. Когда он оформит подписку, вам обоим добавится по ${ref.days} дня.
+        Приглашено: ${ref.invited}, оформили: ${ref.paid}.</p>
+      <div class="rowTools"><input id="refLink" type="text" readonly value="${escHtml(ref.link)}" style="font-size:12px;">
+        <button type="button" class="chipBtn" id="refCopy">Скопировать</button></div>
+      <button class="btn btn-outline" id="refShare" type="button" style="margin-top:8px;">Отправить другу в Telegram</button>
+    </div>` : ""}`;
   box.querySelectorAll("[data-bprod]").forEach(b=> b.onclick = ()=>{ bill.product=b.dataset.bprod; bill.quote=null; haptic("selection"); renderBilling(); });
   box.querySelectorAll("[data-btier]").forEach(b=> b.onclick = ()=>{ bill.tier=b.dataset.btier; bill.quote=null; haptic("selection"); renderBilling(); });
   box.querySelectorAll("[data-bdays]").forEach(b=> b.onclick = ()=>{ bill.days=+b.dataset.bdays; bill.quote=null; haptic("selection"); renderBilling(); });
@@ -1292,6 +1310,12 @@ async function renderBilling(){
   const chk = $("#checkPay"); if(chk) chk.onclick = ()=> checkPayment(true);
   const op = $("#openPay"); if(op) op.onclick = ()=> openPay(bill.payLink);
   const tb = $("#trialBtn"); if(tb) tb.onclick = startTrial;
+  const rc = $("#refCopy"); if(rc) rc.onclick = async ()=>{
+    try{ await navigator.clipboard.writeText(ref.link); }catch(e){ const i=$("#refLink"); i.select(); document.execCommand && document.execCommand("copy"); }
+    haptic("success"); showToast("Ссылка скопирована"); };
+  const rs = $("#refShare"); if(rs) rs.onclick = ()=>{
+    const u = "https://t.me/share/url?url=" + encodeURIComponent(ref.link) + "&text=" + encodeURIComponent("Парсер Авито: присылает новые объявления по iPhone и брендам через минуту после публикации. По моей ссылке — +" + ref.days + " дня к подписке");
+    if(tg && tg.openTelegramLink) tg.openTelegramLink(u); else window.open(u, "_blank"); };
 }
 
 async function checkPayment(manual){

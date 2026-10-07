@@ -370,7 +370,8 @@ function renderSubs(){
   const addLinkBtn = $("#addSubBtn"); if(addLinkBtn) addLinkBtn.hidden = isPending();
   $all(".senderBtn").forEach(b=> b.hidden = !!(meState && meState.senderOk === true));
   // бот не может писать человеку (Telegram ответил «chat not found») — крупное предупреждение
-  $all(".senderWarn").forEach(b=> b.hidden = !(meState && meState.senderOk === false));
+  /* предупреждение — пока не знаем точно, что бот может писать (null — ни разу не разрешали и не нажимали «Старт») */
+  $all(".senderWarn").forEach(b=> b.hidden = !(meState && meState.senderOk !== true));
   if(subsLoadFailed && !list.length){
     wrap.innerHTML = `<div class="emptyState">Не удалось загрузить подписки.<br>Ошибка сервера: ${escHtml(subsLoadError||"неизвестна")}</div>`;
     return;
@@ -624,6 +625,19 @@ function enableNotify(manual){
       try{ const r = await apiJson("/api/me/notify-ok","POST"); if(r.ok){ haptic("success"); if(manual) showToast("🔔 Уведомления включены"); await loadMe(); } }catch(e){}
     });
   }catch(e){ if(manual) openHeadBot(); }
+}
+function askWriteAccess(){
+  /* Promise: true — разрешили (или уже было разрешено), false — отказались/не поддерживается */
+  return new Promise(res=>{
+    try{
+      if(!tg || !tg.requestWriteAccess){ res(false); return; }
+      tg.requestWriteAccess(async allowed=>{
+        if(!allowed){ res(false); return; }
+        try{ await apiJson("/api/me/notify-ok","POST"); await loadMe(); }catch(e){}
+        res(true);
+      });
+    }catch(e){ res(false); }
+  });
 }
 function openHeadBot(){
   const url = "https://t.me/" + HEAD_BOT_USERNAME + "?start=go";
@@ -1041,6 +1055,15 @@ function renderSearchSheet(){
     if(!s.locationId){ showToast("Выберите город"); return; }
     if(!items.some(x=>x.enabled)){ showToast(kind==="clothes"?"Включите хотя бы один бренд":"Включите хотя бы одну модель"); return; }
     create.disabled = true;
+    /* без разрешения писать бот не сможет присылать объявления — спрашиваем прямо здесь, до создания поиска */
+    if(!(meState && meState.senderOk === true)){
+      const ok = await askWriteAccess();
+      if(!ok){
+        create.disabled = false;
+        if(window.confirm("Без разрешения бот не сможет присылать объявления.\n\nОткрыть бота и нажать «Старт»? После этого вернитесь сюда и создайте поиск.")) openHeadBot();
+        return;
+      }
+    }
     try{ await apiJson("/api/searches","POST", searchBody()); haptic("success"); showToast("Поиск создан и запущен"); closeSearchSheet(); }
     catch(e){ showToast("Не удалось создать: "+e.message); create.disabled = false; }
   });

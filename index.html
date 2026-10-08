@@ -1332,7 +1332,7 @@ async function renderStatusPanel(users){
 
 /* ====================== ПОДПИСКА И ОПЛАТА ====================== */
 const PROD_NAMES = { iphone:"iPhone", clothes:"Шмот" };
-const DUR_NAMES = { 7:"Неделя", 30:"Месяц", 60:"2 месяца" };
+const DUR_NAMES = { 1:"1 день", 7:"Неделя", 30:"Месяц", 60:"2 месяца" };
 const fmtDate = iso => iso ? new Date(iso).toLocaleDateString("ru-RU",{day:"numeric",month:"long"}) : "";
 const rub = n => Number(n).toLocaleString("ru-RU") + " ₽";
 let bill = { data:null, product:"iphone", tier:"base", days:30, promo:"", quote:null, payId:null, payLink:null };
@@ -1350,7 +1350,10 @@ async function renderBilling(){
       .then(q=>{ bill.quote = q; renderBilling(); }).catch(()=>{});
   }
   const ref = bill.data.ref;
-  if(!st.durations.includes(bill.days)) bill.days = st.durations[1] || st.durations[0];
+  /* «1 день» — только у тарифа st.dayPass.tier (Базовый), цена своя, промокоды не действуют */
+  const dp = st.dayPass && st.dayPass.price > 0 ? st.dayPass : null;
+  const durs = (dp && bill.tier===dp.tier ? [1] : []).concat(st.durations);
+  if(!durs.includes(bill.days)) bill.days = st.durations[1] || st.durations[0];
   const status = a.free ? `<div class="stOk">✅ ${a.admin ? "Администратор" : "Сотрудник"} — полный доступ без оплаты</div>`
     : Object.keys(PROD_NAMES).map(p=>{
         const x = a.products[p];
@@ -1362,9 +1365,10 @@ async function renderBilling(){
       <p class="fieldHint" style="margin:6px 0 10px;">До ${st.trial.searches} поисков через фильтры iPhone и Шмот (без своих ссылок). Один раз на аккаунт.</p>
       <button class="btn btn-primary" id="trialBtn" type="button">Включить пробный период</button>
     </div>` : "";
-  const prices = (st.prices[bill.product]||{})[bill.tier]||{};
+  const prices = { ...((st.prices[bill.product]||{})[bill.tier]||{}) };
+  if(dp && bill.tier===dp.tier) prices[1] = dp.price;
   const tierBtns = ["base","pro"].map(t=>{ const T = st.tiers[t]; return `<button type="button" class="segBtn ${bill.tier===t?"on":""}" data-btier="${t}">${T.title}<br><span style="font-weight:600;font-size:11px;opacity:.85;">${T.searches} поисков${T.links?` · ${T.links} ссылки`:""}</span></button>`; }).join("");
-  const durBtns = st.durations.map(d=>`<button type="button" class="segBtn ${bill.days===d?"on":""}" data-bdays="${d}">${DUR_NAMES[d]||d+" дн."}<br><span style="font-weight:600;font-size:11px;opacity:.85;">${prices[d]?rub(prices[d]):"—"}</span></button>`).join("");
+  const durBtns = durs.map(d=>`<button type="button" class="segBtn ${bill.days===d?"on":""}" data-bdays="${d}">${DUR_NAMES[d]||d+" дн."}<br><span style="font-weight:600;font-size:11px;opacity:.85;">${prices[d]?rub(prices[d]):"—"}</span></button>`).join("");
   const q = bill.quote && bill.quote.product===bill.product && bill.quote.tier===bill.tier && bill.quote.days===bill.days ? bill.quote : null;
   const amount = q ? q.amount : prices[bill.days];
   box.innerHTML = `
@@ -1375,10 +1379,10 @@ async function renderBilling(){
     <div class="field"><label>Тариф</label><div class="seg">${tierBtns}</div>
       <p class="fieldHint">Свои ссылки на поиск Авито — только в тарифе «${st.tiers.pro.title}».</p></div>
     <div class="field"><label>Срок</label><div class="seg">${durBtns}</div></div>
-    <div class="field"><label>Промокод</label>
+    ${bill.days===1 ? `<p class="fieldHint" style="margin:-4px 0 12px;">Попробовать на день. Промокоды на этот срок не действуют.</p>` : `<div class="field"><label>Промокод</label>
       <div class="rowTools"><input id="promoIn" type="text" placeholder="Если есть" value="${escHtml(bill.promo)}" autocomplete="off" style="text-transform:uppercase;">
       <button type="button" class="chipBtn" id="promoApply">Применить</button></div>
-      ${q && q.message ? `<p class="fieldHint">${escHtml(q.message)}</p>` : ""}</div>
+      ${q && q.message ? `<p class="fieldHint">${escHtml(q.message)}</p>` : ""}</div>`}
     <button class="btn btn-primary" id="payBtn" type="button">Оплатить через СБП · ${amount ? rub(amount) : "—"}${q && q.amount < q.price ? ` <s style="opacity:.6;font-weight:600;">${rub(q.price)}</s>` : ""}</button>
     ${bill.payId ? (bill.payLink
       ? `<button class="btn btn-primary" id="openPay" type="button" style="margin-top:8px;background:var(--success);">💳 Открыть оплату СБП</button>
@@ -1399,15 +1403,15 @@ async function renderBilling(){
   box.querySelectorAll("[data-bprod]").forEach(b=> b.onclick = ()=>{ bill.product=b.dataset.bprod; bill.quote=null; haptic("selection"); renderBilling(); });
   box.querySelectorAll("[data-btier]").forEach(b=> b.onclick = ()=>{ bill.tier=b.dataset.btier; bill.quote=null; haptic("selection"); renderBilling(); });
   box.querySelectorAll("[data-bdays]").forEach(b=> b.onclick = ()=>{ bill.days=+b.dataset.bdays; bill.quote=null; haptic("selection"); renderBilling(); });
-  $("#promoIn").oninput = e => { bill.promo = e.target.value.trim(); };
-  $("#promoApply").onclick = async ()=>{
+  if($("#promoIn")) $("#promoIn").oninput = e => { bill.promo = e.target.value.trim(); };
+  if($("#promoApply")) $("#promoApply").onclick = async ()=>{
     try{ bill.quote = await apiJson("/api/billing/quote","POST",{ product:bill.product, tier:bill.tier, days:bill.days, promo:bill.promo }); renderBilling(); }
     catch(e){ showToast(e.message); } };
 
   $("#payBtn").onclick = async ()=>{
     const btn = $("#payBtn"); btn.disabled = true; btn.textContent = "⏳ Подождите несколько секунд…";
     try{
-      const r = await apiJson("/api/billing/checkout","POST",{ product:bill.product, tier:bill.tier, days:bill.days, promo:bill.promo });
+      const r = await apiJson("/api/billing/checkout","POST",{ product:bill.product, tier:bill.tier, days:bill.days, promo: bill.days===1 ? "" : bill.promo });
       bill.payId = r.paymentId; bill.payLink = r.link || null;
       renderBilling(); startPayWatch();
     }catch(e){ showToast(e.message); btn.disabled = false; } };

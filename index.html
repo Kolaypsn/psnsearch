@@ -199,6 +199,33 @@ button,input,textarea{font-family:inherit;}
 .tabBtn svg{width:23px;height:23px;}
 .tabBtn.active{color:var(--accent);}
 
+/* ---------- витрина ---------- */
+.scBar{display:flex;gap:8px;margin:10px 0 12px;align-items:center;}
+.scBar .seg{flex:1;}
+.scBar .segBtn{padding:7px 4px;font-size:13px;}
+.scMine{flex:none;border:1px solid var(--border);background:var(--surface);color:var(--text-secondary);border-radius:99px;padding:8px 12px;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap;}
+.scMine.on{border-color:var(--accent);color:var(--accent);background:color-mix(in srgb, var(--accent) 10%, var(--surface));}
+.scGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.scCard{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-m);overflow:hidden;box-shadow:var(--shadow);cursor:pointer;display:flex;flex-direction:column;min-width:0;}
+.scImg{position:relative;aspect-ratio:1/1;background:var(--surface-2);}
+.scImg img{width:100%;height:100%;object-fit:cover;display:block;}
+.scPct{position:absolute;left:8px;top:8px;background:var(--success);color:#fff;font-weight:800;font-size:13px;padding:4px 8px;border-radius:8px;}
+.scAge{position:absolute;right:8px;top:8px;background:rgba(0,0,0,.62);color:#fff;font-weight:700;font-size:11.5px;padding:4px 7px;border-radius:8px;}
+.scAge.new{background:var(--warning);color:#1d1400;}
+.scBody{padding:9px 10px 11px;display:flex;flex-direction:column;gap:3px;min-width:0;}
+.scTitle{font-size:13px;font-weight:700;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.scPrice{font-size:16px;font-weight:800;}
+.scMed{font-size:11.5px;color:var(--text-secondary);}
+.scCity{font-size:11.5px;color:var(--text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.scCard.sold .scImg img{filter:grayscale(1);opacity:.55;}
+.scCard.sold .scPct{background:var(--text-secondary);}
+.scSoldTag{position:absolute;left:8px;right:8px;bottom:8px;background:rgba(0,0,0,.72);color:#fff;font-weight:800;font-size:12px;padding:6px 8px;border-radius:8px;text-align:center;}
+.scLock{background:var(--surface);border:1px solid var(--accent);border-radius:var(--radius-m);padding:14px;margin-bottom:12px;box-shadow:var(--shadow);}
+.scLock b{font-size:15px;}
+.scLock p{margin:6px 0 10px;font-size:13.5px;line-height:1.45;color:var(--text-secondary);}
+.scEmpty{text-align:center;padding:30px 10px;color:var(--text-secondary);font-size:14px;line-height:1.5;}
+.scNote{font-size:11.5px;color:var(--text-secondary);margin:14px 2px 4px;line-height:1.45;}
+
 .toast{position:fixed;left:50%;bottom:96px;transform:translateX(-50%);background:var(--text);color:var(--bg);padding:11px 18px;border-radius:999px;font-size:13.5px;font-weight:600;z-index:70;box-shadow:var(--shadow);max-width:88%;text-align:center;}
 </style>
 </head>
@@ -246,6 +273,28 @@ button,input,textarea{font-family:inherit;}
     <button class="btn btn-outline senderBtn" type="button" onclick="enableNotify(true)" style="margin-top:8px;">🔔 Включить уведомления</button>
   </main>
 
+  <!-- ---------- Витрина ---------- -->
+  <main class="view" id="showcaseView" hidden>
+    <h2 class="viewTitle">Витрина</h2>
+    <p class="muted small viewSub">Лучшие объявления — заметно ниже средней цены на Авито. Проданные отмечаем сами.</p>
+    <div class="seg" id="scKindSeg">
+      <button type="button" class="segBtn on" data-sckind="iphone">iPhone</button>
+      <button type="button" class="segBtn" data-sckind="clothes">Шмот</button>
+    </div>
+    <div class="scBar">
+      <div class="seg" id="scHoursSeg">
+        <button type="button" class="segBtn" data-schours="12">12 ч</button>
+        <button type="button" class="segBtn on" data-schours="24">24 ч</button>
+      </div>
+      <div class="seg" id="scSortSeg">
+        <button type="button" class="segBtn on" data-scsort="pct">Выгоднее</button>
+        <button type="button" class="segBtn" data-scsort="new">Свежее</button>
+      </div>
+    </div>
+    <button type="button" class="scMine" id="scMineBtn" style="margin:-2px 0 12px;">📍 Только мои города</button>
+    <div id="scBox"></div>
+  </main>
+
   <!-- ---------- Информация ---------- -->
   <main class="view" id="infoView" hidden>
     <h2 class="viewTitle">Информация</h2>
@@ -285,6 +334,7 @@ button,input,textarea{font-family:inherit;}
     <button class="tabBtn" data-tab="info"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><circle cx="12" cy="8" r=".6" fill="currentColor" stroke="none"/></svg><span>Информация</span></button>
     <button class="tabBtn active" data-tab="iphone"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2" width="12" height="20" rx="3"/><path d="M10.5 4.6h3"/><path d="M11 19h2"/></svg><span>iPhone</span></button>
     <button class="tabBtn" data-tab="clothes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3l-5 3 2 4 2-1v12h10V9l2 1 2-4-5-3c0 2-1.8 3-4 3S8 5 8 3z"/></svg><span>Шмот</span></button>
+    <button class="tabBtn" data-tab="showcase"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c.6 3 4.5 5 4.5 9.5a4.5 4.5 0 0 1-9 0c0-2 .9-3.4 2-4.3.2 1.7 1 2.6 2 2.9-.4-2.8 0-5.6.5-8.1z"/><path d="M10.2 17.2a1.9 1.9 0 0 0 3.6 0"/></svg><span>Витрина</span></button>
     <button class="tabBtn" data-tab="profile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/><path d="M7 15h3"/></svg><span>Подписка</span></button>
     <button class="tabBtn" data-tab="admin" id="adminTabBtn" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.6-3 8.4-7 10-4-1.6-7-5.4-7-10V6l7-3z"/></svg><span>Админ</span></button>
   </nav>
@@ -1541,6 +1591,98 @@ $all("[data-aseg]").forEach(b=> b.addEventListener("click", ()=>{
   if(b.dataset.aseg==="pays") renderAdminPays();
 }));
 
+/* ---------- витрина ---------- */
+const SC = { kind:"iphone", hours:24, sort:"pct", mine:false, data:null, timer:null, loading:false };
+try{ Object.assign(SC, safeGet("psn_sc_prefs", {})); }catch(e){}
+function scSavePrefs(){ safeSet("psn_sc_prefs", { kind:SC.kind, hours:SC.hours, sort:SC.sort, mine:SC.mine }); }
+function scRub(x){ return Math.round(x).toLocaleString("ru-RU").replace(/,/g," ") + " ₽"; }
+function scAgo(sec){
+  const m = Math.max(0, Math.round(sec/60));
+  if(m < 5) return "Только что";
+  if(m < 60) return m + " мин";
+  const h = Math.floor(m/60); return h + " ч" + (m%60 && h < 6 ? " " + (m%60) + " мин" : "");
+}
+function scMyLocs(){
+  return searchesCache.filter(s=> s.kind===SC.kind && s.active!==false).map(s=> Number(s.locationId)).filter(Boolean);
+}
+function scInMine(it, locs){
+  if(locs.includes(621540)) return true;               /* поиск по всей России */
+  return locs.includes(Number(it.loc)) || locs.includes(Number(it.reg));
+}
+function stopShowcaseTimer(){ if(SC.timer){ clearInterval(SC.timer); SC.timer=null; } }
+function scSyncControls(){
+  $all("[data-sckind]").forEach(b=> b.classList.toggle("on", b.dataset.sckind===SC.kind));
+  $all("[data-schours]").forEach(b=> b.classList.toggle("on", Number(b.dataset.schours)===SC.hours));
+  $all("[data-scsort]").forEach(b=> b.classList.toggle("on", b.dataset.scsort===SC.sort));
+  const mb = $("#scMineBtn"); mb.classList.toggle("on", SC.mine); mb.textContent = SC.mine ? "📍 Только мои города ✓" : "📍 Только мои города";
+}
+async function loadShowcase(){
+  if(SC.loading) return;
+  SC.loading = true;
+  try{
+    SC.data = await apiJson(`/api/showcase?kind=${SC.kind}&hours=${SC.hours}`, "GET");
+  }catch(e){
+    SC.data = { error: e.message || "Не удалось загрузить" };
+  }finally{ SC.loading = false; }
+  drawShowcase();
+}
+function renderShowcase(){
+  scSyncControls();
+  if(!SC.data || SC.data.kind!==SC.kind || SC.data.hours!==SC.hours) $("#scBox").innerHTML = `<div class="scEmpty">Загружаю…</div>`;
+  else drawShowcase();
+  loadShowcase();
+  stopShowcaseTimer();
+  SC.timer = setInterval(()=>{ if(!$("#showcaseView").hidden && !document.hidden) loadShowcase(); }, 60000);
+}
+function scCard(it, now, sold){
+  const age = scAgo(now - it.ts);
+  const soldTag = sold ? `<div class="scSoldTag">Ушло за ${scAgo(it.sold - it.ts).replace("Только что","пару минут")}</div>` : "";
+  const img = it.img ? `<img src="${escHtml(it.img)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : "";
+  return `<div class="scCard${sold?" sold":""}" data-scurl="${escHtml(it.url)}">
+    <div class="scImg">${img}<span class="scPct">−${it.pct}%</span><span class="scAge${!sold && now-it.ts<300?" new":""}">${sold?"продано":age}</span>${soldTag}</div>
+    <div class="scBody">
+      <div class="scTitle">${escHtml(it.title)}</div>
+      <div class="scPrice">${scRub(it.price)}</div>
+      <div class="scMed">средняя ${scRub(it.med)}${it.sub?" · "+escHtml(it.sub):""}</div>
+      <div class="scCity">📍 ${escHtml(it.city||"")}</div>
+    </div></div>`;
+}
+function drawShowcase(){
+  const box = $("#scBox"), d = SC.data;
+  if(!d) return;
+  if(d.error){ box.innerHTML = `<div class="scEmpty">⚠️ ${escHtml(d.error)}<br><br><button class="btn btn-outline" type="button" onclick="loadShowcase()">Повторить</button></div>`; return; }
+  const now = Date.now()/1000;
+  const locs = scMyLocs();
+  const mineOn = SC.mine && locs.length;
+  const pass = (it)=> !mineOn || scInMine(it, locs);
+  let items = (d.items||[]).filter(pass);
+  items = items.slice().sort(SC.sort==="new" ? (a,b)=> b.ts - a.ts : (a,b)=> b.pct - a.pct);
+  const sold = (d.sold||[]).filter(pass);
+  const locked = (d.locked||[]).filter(pass);
+  let html = "";
+  if(SC.mine && !locs.length) html += `<p class="muted small" style="margin:0 0 10px;">У вас нет поисков в разделе «${SC.kind==="iphone"?"iPhone":"Шмот"}» — показываю всю Россию.</p>`;
+  if(!d.full && locked.length){
+    const best = Math.max(...locked.map(x=>x.pct));
+    html += `<div class="scLock"><b>🔒 Ещё ${locked.length} свежих — до −${best}% к рынку</b>
+      <p>Объявления за последний час видны с подпиской или на пробном периоде. Подписчики получают такие уведомлением в Телеграм через секунды после появления на Авито — пока их не купили другие.</p>
+      <button class="btn btn-primary" type="button" onclick="document.querySelector('[data-tab=profile]').click()">Оформить подписку</button></div>`;
+  }
+  if(!items.length && !sold.length){
+    html += `<div class="scEmpty">Пока нет подходящих объявлений${mineOn?" в ваших городах":""} за ${SC.hours} ч.<br>Витрина пополняется сама, как только на Авито появляется что-то заметно ниже средней цены.</div>`;
+  } else {
+    html += `<div class="scGrid">${items.map(it=>scCard(it, now, false)).join("")}${sold.map(it=>scCard(it, now, true)).join("")}</div>`;
+  }
+  html += `<p class="scNote">Средняя — по похожим частным объявлениям на Авито за 7 дней (iPhone — модель и память; одежда — бренд, тип вещи и состояние). Магазины и подозрительные объявления не показываем. Проверяйте товар при покупке.</p>`;
+  box.innerHTML = html;
+  box.querySelectorAll("[data-scurl]").forEach(c=> c.addEventListener("click", ()=>{
+    haptic("light"); const u = c.dataset.scurl; if(tg && tg.openLink) tg.openLink(u); else window.open(u, "_blank");
+  }));
+}
+$all("[data-sckind]").forEach(b=> b.addEventListener("click", ()=>{ haptic("selection"); SC.kind=b.dataset.sckind; scSavePrefs(); renderShowcase(); }));
+$all("[data-schours]").forEach(b=> b.addEventListener("click", ()=>{ haptic("selection"); SC.hours=Number(b.dataset.schours); scSavePrefs(); renderShowcase(); }));
+$all("[data-scsort]").forEach(b=> b.addEventListener("click", ()=>{ haptic("selection"); SC.sort=b.dataset.scsort; scSavePrefs(); scSyncControls(); drawShowcase(); }));
+$("#scMineBtn").addEventListener("click", ()=>{ haptic("selection"); SC.mine=!SC.mine; scSavePrefs(); scSyncControls(); drawShowcase(); });
+
 /* ---------- переключение вкладок ---------- */
 function switchTab(name){
   $all("[data-tab]").forEach(b=> b.classList.toggle("active", b.dataset.tab===name));
@@ -1549,6 +1691,8 @@ function switchTab(name){
   $("#infoView").hidden = name!=="info";
   $("#profileView").hidden = name!=="profile";
   $("#adminView").hidden = name!=="admin";
+  $("#showcaseView").hidden = name!=="showcase";
+  if(name==="showcase") renderShowcase(); else stopShowcaseTimer();
   if(name==="iphone"){ renderSearchList("iphone"); renderSubs(); }
   if(name==="clothes") renderSearchList("clothes");
   if(name==="info") renderInfo();

@@ -1034,6 +1034,10 @@ function renderSearchSheet(){
       <div class="seg">${GENDERS.map(([v,t])=>`<button type="button" class="segBtn ${s.gender===v?"on":""}" data-gender="${v}">${t}</button>`).join("")}</div>
       <p class="fieldHint">${s.gender==="mf" ? "⚠️ Этот поиск раньше искал сразу оба пола — выберите один. Для другого пола создайте отдельный поиск." : "Один поиск — один пол. Нужно и то, и другое — создайте два поиска."}</p>
     </div>
+    <div class="field"><label>Что ищем</label>
+      <div class="seg">${[["all","Всё"],["clothes","Одежда"],["shoes","Обувь"]].map(([v,t])=>`<button type="button" class="segBtn ${(s.config.what||"all")===v?"on":""}" data-what="${v}">${t}</button>`).join("")}</div>
+      <p class="fieldHint">${(s.config.what||"all")==="shoes" ? (s.gender==="f" ? "⚠️ Женская обувь пока не ищется — выберите «Мужское» или «Одежда»." : "Только обувь — кроссовки, ботинки, кеды. Без курток и худи.") : (s.config.what==="clothes" ? "Только одежда, без обуви." : "Одежда и обувь вместе.")}</p>
+    </div>
     <div class="field"><label>Состояние</label>
       <div class="condWrap">${CONDITIONS.map(c=>`<button type="button" class="condChip ${s.config.conditions.includes(c)?"on":""}" data-cond="${c}">${s.config.conditions.includes(c)?"✓ ":""}${c}</button>`).join("")}</div>
       <p class="fieldHint">Приходят только объявления с выбранным состоянием. Если продавец состояние не указал — объявление тоже придёт.</p>
@@ -1078,7 +1082,7 @@ function renderSearchSheet(){
     <div class="field" style="position:relative;"><label>Город или область</label>
       <input id="cityInput" type="text" value="${escHtml(s.cityName)}" placeholder="Начните вводить город или область…" autocomplete="off">
       <div id="citySug" class="sugBox" hidden></div>
-      <p class="fieldHint">${kind==="iphone" ? "Объявления приходят только из выбранного города или области (например, «Московская область» — вся область вместе с Москвой, как на Авито)." : s.locationId===621540 ? "⚠️ Вся Россия — объявлений может быть очень много, особенно по одежде. Включайте только нужные бренды/модели и ставьте потолок цены." : "Объявления приходят только из выбранного города или области. Можно выбрать «Вся Россия»."}</p>
+      <p class="fieldHint">${kind==="iphone" && s.locationId===621540 ? "⚠️ Вся Россия — для покупки с доставкой. Объявления приходят на 1–3 минуты позже, чем при выборе города (так работает поиск Авито по всей стране), и их очень много — ставьте модели и потолок цены. Если покупаете лично — выберите свой город." : kind==="iphone" ? "Объявления приходят только из выбранного города или области (например, «Московская область» — вся область вместе с Москвой, как на Авито)." : s.locationId===621540 ? "⚠️ Вся Россия — объявлений может быть очень много, особенно по одежде, и приходят они на 1–3 минуты позже, чем при выборе города. Включайте только нужные бренды и ставьте потолок цены. Если покупаете лично — выберите свой город." : "Объявления приходят только из выбранного города или области. Можно выбрать «Вся Россия»."}</p>
     </div>
     ${genderHtml}
     <div class="field"><label>Название (необязательно)</label>
@@ -1093,9 +1097,13 @@ function renderSearchSheet(){
         .concat([kind==="iphone"
           ? ["market","Сравнивать со средней ценой","Средняя — по объявлениям этой же модели и памяти на Авито за последние 7 дней. В уведомлении: «📊 на 12% ниже средней (средняя 82 000 ₽)»."]
           : ["market","Сравнивать со средней ценой","Средняя — по объявлениям этого же бренда и типа вещи (новые и б/у отдельно) на Авито за последние 7 дней, без магазинов. В уведомлении: «📊 на 25% ниже средней (средняя 12 000 ₽ · куртки, б/у)»."]])
-        .concat(kind==="clothes" ? [["replicaMark","Помечать возможные реплики","Если вещь в 3+ раза дешевле средней по бренду — в уведомлении будет пометка «⚠️ подозрительно дёшево, возможна реплика». Объявление всё равно придёт."]] : [])
+        .concat(kind==="clothes"
+          ? [["replicaMark","Помечать возможную подделку","Если вещь бренда стоит ниже обычной цены оригинала, в 3+ раза дешевле средней или в объявлении слова про реплики — в конце уведомления будет пометка «⚠️ Возможна подделка»."],
+             ["hideSuspicious","Не присылать возможную подделку","Такие объявления не будут приходить совсем."]]
+          : [["scamMark","Помечать подозрительно дешёвые","Если iPhone в 2,5+ раза дешевле средней по модели и памяти — в конце уведомления будет пометка «⚠️ Подозрительно дёшево» (чаще всего это обман, iCloud или брак)."],
+             ["hideSuspicious","Не присылать подозрительно дешёвые","Такие объявления не будут приходить совсем."]])
         .map(([k,t,h])=>`
-      <div class="paramRow"><span>${t}<br><span class="muted small">${h}</span></span><label class="switchCtl"><input type="checkbox" data-cfg="${k}" ${((k==="esim" || k==="replicaMark") ? s.config[k]!==false : !!s.config[k])?"checked":""}><span class="track"></span><span class="thumb"></span></label></div>`).join("")}
+      <div class="paramRow"><span>${t}<br><span class="muted small">${h}</span></span><label class="switchCtl"><input type="checkbox" data-cfg="${k}" ${((k==="esim" || k==="replicaMark" || k==="scamMark") ? s.config[k]!==false : !!s.config[k])?"checked":""}><span class="track"></span><span class="thumb"></span></label></div>`).join("")}
       ${[["photo","Присылать фото"],["desc","Присылать описание"],["seller","Показывать продавца"]].map(([k,t])=>`
       <div class="paramRow"><span>${t}</span><label class="switchCtl"><input type="checkbox" data-param="${k}" ${s.params[k]?"checked":""}><span class="track"></span><span class="thumb"></span></label></div>`).join("")}
     </div>
@@ -1116,6 +1124,7 @@ function renderSearchSheet(){
   ci.addEventListener("blur", ()=> setTimeout(()=>{ sug.hidden = true; ci.value = s.cityName; }, 200));
   /* пол */
   $all("[data-gender]").forEach(b=> b.addEventListener("click", ()=>{ s.gender = b.dataset.gender; haptic("selection"); renderSearchSheet(); scheduleSave(); }));
+  $all("[data-what]").forEach(b=> b.addEventListener("click", ()=>{ s.config.what = b.dataset.what; haptic("selection"); renderSearchSheet(); scheduleSave(); }));
   $all("[data-cond]").forEach(b=> b.addEventListener("click", ()=>{
     const c = b.dataset.cond, list = s.config.conditions;
     if(list.includes(c)){ if(list.length===1){ showToast("Нужно оставить хотя бы одно состояние"); return; } list.splice(list.indexOf(c),1); } else list.push(c);
